@@ -1,0 +1,12 @@
+Geting Started:
+
+1) How to comunicate with the Raspbery PI board via WiFi
+
+- Using a monitor and keyboard, install a wifi stick on Debian
+- Look inside the Router to find the IP address of Raspbery
+- Use Putty to create a SSH connection betwen the PC and Rasp informing the Rasp IP and port 22
+- Use WinSCP (http://winscp.net/eng/download.php) to transfer files between the PC and Rasp
+- Use Nano or VI to edit C code on the RAsp: nano test.c
+- Use the Wiring Pi library to access I/O pins and the serial port in the RAsp (http://wiringpi.com/reference/serial-library/)
+- Use "gcc -Wall -o test test.c -lwiringPi" to compile C code
+- Use "sudo ./test.exe to run the program
