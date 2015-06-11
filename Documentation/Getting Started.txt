@@ -1,10 +1,12 @@
 Geting Started:
 
-1) How to comunicate with the Raspbery PI board via WiFi
+1) How to comunicate with the RaspberryPI board via WiFi
 
 - Using a monitor and keyboard, install a wifi stick on Debian
-- Look inside the Router to find the IP address of Raspbery
+- Look inside the Router to find the IP address of Raspberry
 - Use Putty to create a SSH connection betwen the PC and Rasp informing the Rasp IP and port 22
+- Use "sudo raspi-config" to configure Debian
+- Use "sudo nano /etc/net" to edit network configuration: Router login and password
 - Use WinSCP (http://winscp.net/eng/download.php) to transfer files between the PC and Rasp
 - Use Nano or VI to edit C code on the RAsp: nano test.c
 - Use the Wiring Pi library to access I/O pins and the serial port in the RAsp (http://wiringpi.com/reference/serial-library/)
