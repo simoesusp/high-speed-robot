@@ -22,59 +22,64 @@
 #include <PWM.h>
 
 /*=============================   DEFINES   ========================================== */
+#define Ncommands 12 // number of commands available
 // ------- radio pins ----------------------------
 #define CE_PIN   5
 #define CSN_PIN 6
 // -------- motor related defines -----------------
 #define leftmotor 10 // left motor pin
 #define rightmotor 3 // right motor pin
+
 #define stop_pwm_l 110 // pwm in which left motor is stopped
 #define stop_pwm_r 90  // pwm in which right motor is stopped
-// --------- deadlines (in microsseconds)----------------------------
-#define Ncommands 12
-#define dt 1000 // time increment for the deadlock handling routine
-#define t_min 10000
-#define t_max 100000 
-#define T_com 1000000 
-#define T_start 1000000 
-// TODO: ajeitar isso aqui!!!!
-// maximum time (microseconds) allowed for ultrasonic sensor reading
+#define fullSpeed_l 170
+#define fullSpeed_r 170
+#define avgSpeed_l 140
+#define avgSpeed_r 150
+#define lowSpeed_l 120
+#define lowSpeed_r 100
+
+
+// --------- deadlines (in millisseconds)----------------------------
+#define dt 1 // time increment for the deadlock handling routine
+#define t_min 1
+#define t_max 100 
+#define t_com 500 // deadline for performing communication (snd & rcv)
+#define t_start 1000 // deadline for loss of radio connection when running - autonomous() as well as start() -
+#define n_max 10 // number of attemptives to handle deadlock
 
 //TODO: pq medir além da regiao de atenção??
-#define time_out 40000 // USS reading deadline <=> 6.8m (datasheet fala que só vai até 4m...)
-// maximum time (microseconds) allowed to wait for the previous pulse in sensors echoPin to end
-// #define prev_pulse_timeout 7000 // previous pulse waiting deadline 
+#define time_out 30 // USS reading deadline <=> 6.8m (datasheet fala que só vai até 4m...)
+// maximum time (milliseconds) allowed to wait for the previous pulse in sensors echoPin to end
 
-// NOT A DEADLINE:
-#define MaxPayload 25 
-#define n_max 10
+// RADIO RELATED
+
+#define MaxPayload 32 // Maximum message size (32 bytes)
 // ---------- safety button pins -----------------
-#define ON  3// always high
-#define OFF 2 // always low 
-#define state 4 // says if in trouble or safe!
+#define ON  2// always high
+#define OFF 4 // always low 
+#define state 3 // says if in trouble or safe!
 
 // ----------- USS Pins --------------------------
               // Obs.: non PWM digital pins were chosen to be sensor pins.
 #define trigPin 2
-#define echoPin0 A0
-#define echoPin1 A1 
+#define echoPin0 8
+#define echoPin1 7
 #define echoPin2 A2
-#define echoPin3 7 
-#define echoPin4 8 
-
+#define echoPin3 A1 
+#define echoPin4 A0 
 // ---------- obstacle avoidance related defines ---
 
 //TODO: nao esquecer de arrumar de novo!!!!
-#define minDist 50 // obstacle can't get any closer than minDist (in cm) from the robot
-#define warningDist 100 // minDist < obstacle distance < warningDist => warning zone!
+#define minDist 150 // obstacle can't get any closer than minDist (in cm) from the robot
+#define warningDist 250 // minDist < obstacle distance < warningDist => warning zone!
+#define outOfRange 500
 
 
 #define E_L 0 // turn softly to the left
 #define E_M 1 // turn to the left
 #define E_F 2 // turn abruptly to the right
-
 #define Frente 3 // straight ahead
-
 #define D_L 4 // turn softly to the right
 #define D_M 5 // turn to the right
 #define D_F 6 // turn abruptly to the right
@@ -85,18 +90,14 @@
 
 // -------- motor related variables -----------------
 /*int32_t*/ int frequency_r = 400;    // right motor pwm_value  = Motor Stopped   :  Pulse Width = 1ns
-/*uint8_t*/ int pwm_value_r = 330;    // right motor  pwm_value  = Motor Stopped   :  Pulse Width = 1ns
 /*int32_t*/ int frequency_l = 400;    // left motor frequency (in Hz)
+/*uint8_t*/ int pwm_value_r = 330;    // right motor  pwm_value  = Motor Stopped   :  Pulse Width = 1ns
 /*uint8_t*/ int pwm_value_l = 104;    // left motor  pwm_value  = Motor Stopped   :  Pulse Width = 1ns
+
 bool left; // left motor on/off flag
 bool right; // right motor on/off flag
 bool speed; // if true, try to read pwm_value from remote control
 bool frequency;// if true, try to read frequency from remote control
-
-//TODO: why not make these defines???
-uint8_t fullSpeed = 200;
-uint8_t avgSpeed = 170;
-uint8_t lowSpeed = 150;
 
 // -------- communication related variables -----------------
 const uint64_t pipes[2] = {0xDEDEDEDEE7LL, 0xDEDEDEDEE9LL}; // Define the transmit pipe (Obs.: "LL" => "LongLong" type)
@@ -106,18 +107,20 @@ char rcv[MaxPayload]; // message received
 char msg[MaxPayload]; // used by remote control
 char cmd[MaxPayload]; // used by the robot
 char **intCmd; // internal commands
-long randNumber;
+long randNumber; // used by deadlock handling function
 unsigned long t;
 //--------- UltraSonic Sensor type --------------------------
 struct sensor_t
 {
     uint8_t Bit;
     uint8_t port;
-    bool data_available; // HIGH when distance is up to date, LOW when distance isn't available yet.
+    bool data_available; // HIGH => distance is up to date, LOW => reading data || no obstacle detected during last reading operation.
     unsigned long duration; // pulse duration in echoPin.
-    unsigned long distance; // obstacle distance calculated.
+    unsigned long distance; // current obstacle distance calculated.
+    unsigned long farthest; // farthest obstacle distance calculated (10 measures iteration).
+    unsigned long closest; // closest obstacle distance calculated (10 measures iteration).
+    unsigned long mean; // mean obstacle distance calculated (10 measures iteration).
 } USS[5]; 
-
 
 bool safety_button;
 
@@ -129,7 +132,6 @@ int *T;                  // Truth Table
 
 /*========================= FUNCTIONS  ============================================================*/
 void autonomous();
-
 // -------- communication oriented functions -------
 void communication(bool mode);
 bool Read_nonBlocking();
@@ -137,6 +139,7 @@ bool Read_blocking();
 bool Write_nonBlocking(bool);
 bool Write_blocking(bool);
 void deadlockHandling(unsigned int);
+void debug(unsigned long, unsigned long);
 
 //---------- string handling functions -------------
 void concatenate(char *, char *);
@@ -157,14 +160,17 @@ bool checkButton(); // check safety button status
 //--------- obstacle avoidance related functions ---
 void ObstacleAvoid();
 void SensorSettings();
-int myPulseIn(uint8_t, uint8_t, unsigned long);
+int myPulseIn();
 int SensorReading();
+void measuring();
+void getExtreamValues();
 void SensorsDataPrint();
 void SensorsDataSerialPrint();
 int obstacleShape();
 void speedControl(int);
 void initTable(int *T);
 /*=======================================================================================================*/
+// int mypow(int , int );
 
 void setup()
 {
@@ -200,19 +206,20 @@ void setup()
         InitTimersSafe(); //initialize all timers except for 0, to save time keeping functions
 
         //sets the frequency for the specified pin
-        bool success = SetPinFrequencySafe(leftmotor, frequency_l);
-        success &= SetPinFrequencySafe(rightmotor, frequency_r);
+        SetPinFrequencySafe(leftmotor, frequency_l);
+        SetPinFrequencySafe(rightmotor, frequency_r);
 
         pwmWrite(leftmotor, pwm_value_l);   // pwmWrite(pin, DUTY * 255 / 100);  
         pwmWrite(rightmotor, pwm_value_r);   // pwmWrite(pin, DUTY * 255 / 100);  
-        delay(1000); // TODO ve se da pra fazer isso mais rapido!
+        delay(1); 
         pwmWrite(rightmotor, stop_pwm_r);   // pwmWrite(pin, DUTY * 255 / 100);  
-        delay(1000);
+        delay(1);
         pwmWrite(rightmotor, pwm_value_r);   // pwmWrite(pin, DUTY * 255 / 100);  
-        delay(1000);
+        delay(1);
         pwm_value_r = stop_pwm_r;
         pwmWrite(rightmotor, pwm_value_r);   // pwmWrite(pin, DUTY * 255 / 100);  
 
+        // initialize command set
         int i;
         intCmd = (char**)malloc(Ncommands*sizeof(char*));
         for(i=0;i<Ncommands;i++)
@@ -238,11 +245,11 @@ void loop()
     communication(select);
 }
 
-/*---------------------------------  OBSTACLE AVOIDANCE STUFF    -----------------------------------------------------------------------*/
+/*---------------------------------  OBSTACLE AVOIDANCE STUFF    --------------------------------------------------------------------*/ 
 
 void ObstacleAvoid()
 {
-    register int obstacle;
+    int obstacle;
 
     obstacle = SensorReading();
 
@@ -250,21 +257,21 @@ void ObstacleAvoid()
     if (obstacle < 0)
     {
         //   STOP !!!
-        pwmWrite(leftmotor, stop_pwm_l);
-        pwmWrite(rightmotor, stop_pwm_r);
+        stop();
     }
 
     // Warning Zone
-    else if (obstacle > 0)
+    if (obstacle > 0)
         speedControl(obstacle);
 
     // Safe Zone
-    else
+    if(obstacle == 0) // TODO: maybe it could be incorporated in the last if...
     {
-        pwmWrite(leftmotor, fullSpeed);
-        pwmWrite(rightmotor, fullSpeed);
+        pwmWrite(leftmotor, fullSpeed_l);
+        pwmWrite(rightmotor, fullSpeed_r);
     }
 }
+
 // incluir tratativas de erro?
 void SensorSettings()
 {
@@ -282,46 +289,43 @@ void SensorSettings()
 
     USS[4].Bit = digitalPinToBitMask(echoPin4);
     USS[4].port = digitalPinToPort(echoPin4);
-
 }
 
-/*TODO:
- *
- * check if it's possible to analyze all sensors at once:  *portInputRegister(USS[i].port)
- * guarantee that micros() won't overflow during execution!!!
- */
-int myPulseIn()
-{
-    unsigned long initTime = micros();
 
-    boolean finished = 0; // finished reading all sensors data flag
-    boolean previous_pulse[5]; // auxiliar variable that states if previous pulse has already ended or not.
-    boolean reading[5];  // auxiliar variable that states if data is being read or not.
-
-    reading[0] = 0;
-    previous_pulse[0] = 0;
-
-    reading[1] = 0;
-    previous_pulse[1] = 0;
-
-    reading[2] = 0;
-    previous_pulse[2] = 0;
-
-    reading[3] = 0;
-    previous_pulse[3] = 0;
-
-    reading[4] = 0;
-    previous_pulse[4] = 0;
-
-    /*
+/*
        Cache the port and bit of the pins in order to speed up the
        pulse width measuring loop and achieve finer resolution.
        Calling digitalRead() instead yields much coarser resolution.
+*/
+int myPulseIn()
+{
+/*TODO:
+ * 1) check if it's possible to analyze all sensors at once:  *portInputRegister(USS[i].port)
+ * 2) guarantee that micros() won't overflow during execution!!!
+ */
+    unsigned long initTime = millis();
 
-     */
+    boolean finished = LOW; // finished reading all sensors data flag
+    boolean previous_pulse[5]; // auxiliar variable that states if previous pulse has already ended or not.
+    boolean reading[5];  // auxiliar variable that states if data is being read or not.
+
+    reading[0] = LOW;
+    previous_pulse[0] = LOW;
+
+    reading[1] = LOW;
+    previous_pulse[1] = LOW;
+
+    reading[2] = LOW;
+    previous_pulse[2] = LOW;
+
+    reading[3] = LOW;
+    previous_pulse[3] = LOW;
+
+    reading[4] = LOW;
+    previous_pulse[4] = LOW;
+
 
     //	processing distance, so state is set to LOW and duration initialized 0.
-
     USS[0].data_available = LOW;
     USS[0].duration = 0;
 
@@ -349,7 +353,7 @@ int myPulseIn()
                     if ((*portInputRegister(USS[0].port) & USS[0].Bit) != USS[0].Bit)
                     {
                         USS[0].duration = micros() - USS[0].duration;
-                        USS[0].data_available = 1;
+                        USS[0].data_available = HIGH;
                     }
                 }
                 else // if data hasn't started to be read
@@ -358,7 +362,7 @@ int myPulseIn()
                     if ((*portInputRegister(USS[0].port) & USS[0].Bit) == USS[0].Bit)
                     {
                         USS[0].duration = micros();
-                        reading[0] = 1;
+                        reading[0] = HIGH;
                     }
                 }
             }
@@ -366,7 +370,7 @@ int myPulseIn()
             {
                 // check if previous pulse has just ended and set previous_pulse if it has.
                 if ((*portInputRegister(USS[0].port) & USS[0].Bit) != USS[0].Bit)
-                    previous_pulse[0] = 1;
+                    previous_pulse[0] = HIGH;
             }
         }
 
@@ -380,7 +384,7 @@ int myPulseIn()
                     if ((*portInputRegister(USS[1].port) & USS[1].Bit) != USS[1].Bit)
                     {
                         USS[1].duration = micros() - USS[1].duration;
-                        USS[1].data_available = 1;
+                        USS[1].data_available = HIGH;
                     }
                 }
                 else // if data hasn't started to be read
@@ -389,7 +393,7 @@ int myPulseIn()
                     if ((*portInputRegister(USS[1].port) & USS[1].Bit) == USS[1].Bit)
                     {
                         USS[1].duration = micros();
-                        reading[1] = 1;
+                        reading[1] = HIGH;
                     }
                 }
             }
@@ -397,7 +401,7 @@ int myPulseIn()
             {
                 // check if previous pulse has just ended and set previous_pulse if it has.
                 if ((*portInputRegister(USS[1].port) & USS[1].Bit) != USS[1].Bit)
-                    previous_pulse[1] = 1;
+                    previous_pulse[1] = HIGH;
             }
         }
 
@@ -411,7 +415,7 @@ int myPulseIn()
                     if ((*portInputRegister(USS[2].port) & USS[2].Bit) != USS[2].Bit)
                     {
                         USS[2].duration = micros() - USS[2].duration;
-                        USS[2].data_available = 1;
+                        USS[2].data_available = HIGH;
                     }
                 }
                 else // if data hasn't started to be read
@@ -420,7 +424,7 @@ int myPulseIn()
                     if ((*portInputRegister(USS[2].port) & USS[2].Bit) == USS[2].Bit)
                     {
                         USS[2].duration = micros();
-                        reading[2] = 1;
+                        reading[2] = HIGH;
                     }
                 }
             }
@@ -428,7 +432,7 @@ int myPulseIn()
             {
                 // check if previous pulse has just ended and set previous_pulse if it has.
                 if ((*portInputRegister(USS[2].port) & USS[2].Bit) != USS[2].Bit)
-                    previous_pulse[2] = 1;
+                    previous_pulse[2] = HIGH;
             }
         }
 
@@ -442,7 +446,7 @@ int myPulseIn()
                     if ((*portInputRegister(USS[3].port) & USS[3].Bit) != USS[3].Bit)
                     {
                         USS[3].duration = micros() - USS[3].duration;
-                        USS[3].data_available = 1;
+                        USS[3].data_available = HIGH;
                     }
                 }
                 else // if data hasn't started to be read
@@ -451,7 +455,7 @@ int myPulseIn()
                     if ((*portInputRegister(USS[3].port) & USS[3].Bit) == USS[3].Bit)
                     {
                         USS[3].duration = micros();
-                        reading[3] = 1;
+                        reading[3] = HIGH;
                     }
                 }
             }
@@ -459,7 +463,7 @@ int myPulseIn()
             {
                 // check if previous pulse has just ended and set previous_pulse if it has.
                 if ((*portInputRegister(USS[3].port) & USS[3].Bit) != USS[3].Bit)
-                    previous_pulse[3] = 1;
+                    previous_pulse[3] = HIGH;
             }
         }
 
@@ -473,7 +477,7 @@ int myPulseIn()
                     if ((*portInputRegister(USS[4].port) & USS[4].Bit) != USS[4].Bit)
                     {
                         USS[4].duration = micros() - USS[4].duration;
-                        USS[4].data_available = 1;
+                        USS[4].data_available = HIGH;
                     }
                 }
                 else // if data hasn't started to be read
@@ -482,7 +486,7 @@ int myPulseIn()
                     if ((*portInputRegister(USS[4].port) & USS[4].Bit) == USS[4].Bit)
                     {
                         USS[4].duration = micros();
-                        reading[4] = 1;
+                        reading[4] = HIGH;
                     }
                 }
             }
@@ -490,164 +494,368 @@ int myPulseIn()
             {
                 // check if previous pulse has just ended and set previous_pulse if it has.
                 if ((*portInputRegister(USS[4].port) & USS[4].Bit) != USS[4].Bit)
-                    previous_pulse[4] = 1;
+                    previous_pulse[4] = HIGH;
             }
         }
 
-        if (micros() > initTime + time_out)
+        if (millis() > initTime + time_out)
             return 0;
         finished =  USS[0].data_available &  USS[1].data_available &  USS[2].data_available &  USS[3].data_available & USS[4].data_available;
     }
     return 1;
 }
 
+/*
+motor da direita sem torque
+rodas sem aderência. Não usar X_F
+*/
 
 void initTable(int *T)
 {
-    T[0] = Frente;
-    T[1] = E_L;
-    T[2] = E_M;
-    T[3] = E_M;
-    T[4] = E_F;
-    T[5] = E_F;
-    T[6] = E_F;
-    T[7] = E_F;
-    T[8] = D_M;
-    T[9] = D_M;
-    T[10] = Frente;
-    T[11] = E_M;
-    T[12] = D_F;
-    T[13] = E_F;
-    T[14] = E_F;
-    T[15] = E_F;
-    T[16] = D_L;
-    T[17] = Frente;
-    T[18] = E_M;
-    T[19] = E_M;
-    T[20] = D_F;
-    T[21] = E_F;
-    T[22] = D_F;
-    T[23] = E_F;
-    T[24] = D_M;
-    T[25] = D_M;
-    T[26] = D_M;
-    T[27] = Frente;
-    T[28] = D_F;
-    T[29] = D_F;
-    T[30] = D_F;
-    T[31] = E_F;
+    T[B00000] = Frente; // doesnt happen!!!
+    T[B00001] = E_L;  
+    T[B00010] = E_M;  
+    T[B00011] = E_M;  
+    T[B00100] = E_F;  
+    T[B00101] = E_F;  
+    T[B00110] = E_F;  
+    T[B00111] = E_F;  
+    T[B01000] = D_M;  
+    T[B01001] = D_M;  
+    // T[B01010] = Frente;  
+    T[B01010] = E_F;  
+    T[B01011] = E_M;  
+    T[B01100] = D_F;  
+    T[B01101] = E_F;  
+    T[B01110] = E_F;  
+    T[B01111] = E_F;  
+    T[B10000] = D_L;  
+    T[B10001] = Frente;  
+    T[B10010] = E_M;  
+    T[B10011] = E_M;  
+    T[B10100] = D_F;  
+    T[B10101] = E_F;  
+    //T[B10110] = D_F;  
+    T[B10110] = E_F;  
+    T[B10111] = E_F;  
+    T[B11000] = D_M;  
+    T[B11001] = D_M;  
+    T[B11010] = D_M;  
+    T[B11011] = Frente;  
+    T[B11100] = D_F;  
+    T[B11101] = D_F;  
+    T[B11110] = D_F;  
+    T[B11111] = E_F;  
 }
 
+/*
+    trocamos L por M.
+    testar
+    colocar M como F
+*/
 
 void speedControl(int obstacle)
 {
-
+//TODO: talvez compense tirar o switch e colocar if
     switch (T[obstacle])
     {
         case (E_L):
-            pwmWrite(leftmotor, lowSpeed);
-            pwmWrite(rightmotor, avgSpeed);
+            pwmWrite(leftmotor, avgSpeed_l);
+            pwmWrite(rightmotor, fullSpeed_r);
             break;
         case (E_M):
-            pwmWrite(leftmotor, avgSpeed);
-            pwmWrite(rightmotor, fullSpeed);
+            pwmWrite(leftmotor, lowSpeed_l);
+            pwmWrite(rightmotor, avgSpeed_r);
             break;
         case (E_F):
-            pwmWrite(leftmotor, lowSpeed);
-            pwmWrite(rightmotor, fullSpeed);
+            pwmWrite(leftmotor, lowSpeed_l);
+            pwmWrite(rightmotor, fullSpeed_r);
             break;
 
         case (D_L):
-            pwmWrite(leftmotor, avgSpeed);
-            pwmWrite(rightmotor, lowSpeed);
+            pwmWrite(leftmotor, fullSpeed_l);
+            pwmWrite(rightmotor, avgSpeed_r);
             break;
 
         case (D_M):
-            pwmWrite(leftmotor, fullSpeed);
-            pwmWrite(rightmotor, avgSpeed);
+            pwmWrite(leftmotor, avgSpeed_l);
+            pwmWrite(rightmotor, lowSpeed_r);
             break;
 
         case (D_F):
-            pwmWrite(leftmotor, fullSpeed);
-            pwmWrite(rightmotor, lowSpeed);
+            pwmWrite(leftmotor, fullSpeed_l);
+            pwmWrite(rightmotor, lowSpeed_r);
             break;
 
         case (Frente):
-            pwmWrite(leftmotor, avgSpeed);
-            pwmWrite(rightmotor, avgSpeed);
+            pwmWrite(leftmotor, avgSpeed_l);
+            pwmWrite(rightmotor, avgSpeed_r);
+            /*
+            pwmWrite(leftmotor, fullSpeed_l);
+            pwmWrite(rightmotor, fullSpeed_r);
+            */
             break;
     }
 }
 
-int SensorReading()
+void getExtreamValues()
 {
+    if(USS[0].farthest < USS[0].distance)
+        USS[0].farthest = USS[0].distance;
+    if(USS[0].closest > USS[0].distance)
+        USS[0].closest = USS[0].distance;
 
-    digitalWrite(trigPin, LOW);  // Added this line
-    delayMicroseconds(2); // Added this line
+    if(USS[1].farthest < USS[1].distance)
+        USS[1].farthest = USS[1].distance;
+    if(USS[1].closest > USS[1].distance)
+        USS[1].closest = USS[1].distance;
+
+    if(USS[2].farthest < USS[2].distance)
+        USS[2].farthest = USS[2].distance;
+    if(USS[2].closest > USS[2].distance)
+        USS[2].closest = USS[2].distance;
+
+    if(USS[3].farthest < USS[3].distance)
+        USS[3].farthest = USS[3].distance;
+    if(USS[3].closest > USS[3].distance)
+        USS[3].closest = USS[3].distance;
+
+    if(USS[4].farthest < USS[4].distance)
+        USS[4].farthest = USS[4].distance;
+    if(USS[4].closest > USS[4].distance)
+        USS[4].closest = USS[4].distance;
+}
+
+void measuring()
+{
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
     digitalWrite(trigPin, HIGH);
-    delayMicroseconds(10); // Added this line
+    delayMicroseconds(10);
     digitalWrite(trigPin, LOW);
 
-    myPulseIn(); // colocar tratativa de erro??
+    if( myPulseIn() )
+    {
+        USS[0].distance = USS[0].duration / 58.2;
+        USS[1].distance = USS[1].duration / 58.2;
+        USS[2].distance = USS[2].duration / 58.2;
+        USS[3].distance = USS[3].duration / 58.2;
+        USS[4].distance = USS[4].duration / 58.2;
+    }
+    else
+    {
+        if(USS[0].data_available)
+            USS[0].distance = USS[0].duration / 58.2;
+        else
+            USS[0].distance = outOfRange;
 
-    USS[0].distance = (USS[0].duration / 2) / 29.1;
-    USS[1].distance = (USS[1].duration / 2) / 29.1;
-    USS[2].distance = (USS[2].duration / 2) / 29.1;
-    USS[3].distance = (USS[3].duration / 2) / 29.1;
-    USS[4].distance = (USS[4].duration / 2) / 29.1;
+        if(USS[1].data_available)
+            USS[1].distance = USS[1].duration / 58.2;
+        else
+            USS[1].distance = outOfRange;
 
-//TODO: resolver problema e tirar acochambraçao!!!
-    if (USS[0].distance < minDist)
-    if (USS[0].distance > 10)
+        if(USS[2].data_available)
+            USS[2].distance = USS[2].duration / 58.2;
+        else
+            USS[2].distance = outOfRange;
+
+        if(USS[3].data_available)
+            USS[3].distance = USS[3].duration / 58.2;
+        else
+            USS[3].distance = outOfRange;
+
+        if(USS[4].data_available)
+            USS[4].distance = USS[4].duration / 58.2;
+        else
+            USS[4].distance = outOfRange;
+    }
+
+// TODO: tirar isso daqui! ou não...
+    USS[0].mean = USS[0].mean + USS[0].distance;
+    USS[1].mean = USS[1].mean + USS[1].distance;
+    USS[2].mean = USS[2].mean + USS[2].distance;
+    USS[3].mean = USS[3].mean + USS[3].distance;
+    USS[4].mean = USS[4].mean + USS[4].distance;
+}
+
+int SensorReading()
+{
+    USS[0].mean = 0;
+    USS[0].farthest = 0;
+    USS[0].closest = 600;
+
+    USS[1].mean = 0;
+    USS[1].farthest = 0;
+    USS[1].closest = 600;
+
+    USS[2].mean = 0;
+    USS[2].farthest = 0;
+    USS[2].closest = 600;
+
+    USS[3].mean = 0;
+    USS[3].farthest = 0;
+    USS[3].closest = 600;
+
+    USS[4].mean = 0;
+    USS[4].farthest = 0;
+    USS[4].closest = 600;
+
+    measuring();
+    getExtreamValues();
+    measuring();
+    getExtreamValues();
+    measuring();
+    getExtreamValues();
+    measuring();
+    getExtreamValues();
+    measuring();
+    getExtreamValues();
+    USS[0].mean = ( USS[0].mean - USS[0].closest ) / 4;
+    USS[1].mean = ( USS[1].mean - USS[1].closest ) / 4;
+    USS[2].mean = ( USS[2].mean - USS[2].closest ) / 4;
+    USS[3].mean = ( USS[3].mean - USS[3].closest ) / 4;
+    USS[4].mean = ( USS[4].mean - USS[4].closest ) / 4;
+
+/*
+    measuring();
+    USS[0].mean = USS[0].distance;
+    USS[0].farthest = USS[0].distance;
+    USS[0].closest = USS[0].distance;
+
+    USS[1].mean = USS[1].distance;
+    USS[1].farthest = USS[1].distance;
+    USS[1].closest = USS[1].distance;
+
+    USS[2].mean = USS[2].distance;
+    USS[2].farthest = USS[2].distance;
+    USS[2].closest = USS[2].distance;
+
+    USS[3].mean = USS[3].distance;
+    USS[3].farthest = USS[3].distance;
+    USS[3].closest = USS[3].distance;
+
+    USS[4].mean = USS[4].distance;
+    USS[4].farthest = USS[4].distance;
+    USS[4].closest = USS[4].distance;
+
+
+    measuring();
+    getExtreamValues();
+    USS[0].mean = USS[0].mean + USS[0].distance;
+    USS[1].mean = USS[1].mean + USS[1].distance;
+    USS[2].mean = USS[2].mean + USS[2].distance;
+    USS[3].mean = USS[3].mean + USS[3].distance;
+    USS[4].mean = USS[4].mean + USS[4].distance;
+
+    measuring();
+    getExtreamValues();
+    USS[0].mean = USS[0].mean + USS[0].distance;
+    USS[1].mean = USS[1].mean + USS[1].distance;
+    USS[2].mean = USS[2].mean + USS[2].distance;
+    USS[3].mean = USS[3].mean + USS[3].distance;
+    USS[4].mean = USS[4].mean + USS[4].distance;
+
+    measuring();
+    getExtreamValues();
+    USS[0].mean = USS[0].mean + USS[0].distance;
+    USS[1].mean = USS[1].mean + USS[1].distance;
+    USS[2].mean = USS[2].mean + USS[2].distance;
+    USS[3].mean = USS[3].mean + USS[3].distance;
+    USS[4].mean = USS[4].mean + USS[4].distance;
+
+    measuring();
+    getExtreamValues();
+    USS[0].mean = USS[0].mean + USS[0].distance;
+    USS[1].mean = USS[1].mean + USS[1].distance;
+    USS[2].mean = USS[2].mean + USS[2].distance;
+    USS[3].mean = USS[3].mean + USS[3].distance;
+    USS[4].mean = USS[4].mean + USS[4].distance;
+
+    measuring();
+    getExtreamValues();
+    USS[0].mean = USS[0].mean + USS[0].distance;
+    USS[1].mean = USS[1].mean + USS[1].distance;
+    USS[2].mean = USS[2].mean + USS[2].distance;
+    USS[3].mean = USS[3].mean + USS[3].distance;
+    USS[4].mean = USS[4].mean + USS[4].distance;
+
+    measuring();
+    getExtreamValues();
+    USS[0].mean = USS[0].mean + USS[0].distance;
+    USS[1].mean = USS[1].mean + USS[1].distance;
+    USS[2].mean = USS[2].mean + USS[2].distance;
+    USS[3].mean = USS[3].mean + USS[3].distance;
+    USS[4].mean = USS[4].mean + USS[4].distance;
+
+    measuring();
+    getExtreamValues();
+    USS[0].mean = USS[0].mean + USS[0].distance;
+    USS[1].mean = USS[1].mean + USS[1].distance;
+    USS[2].mean = USS[2].mean + USS[2].distance;
+    USS[3].mean = USS[3].mean + USS[3].distance;
+    USS[4].mean = USS[4].mean + USS[4].distance;
+
+    measuring();
+    getExtreamValues();
+    USS[0].mean = USS[0].mean + USS[0].distance;
+    USS[1].mean = USS[1].mean + USS[1].distance;
+    USS[2].mean = USS[2].mean + USS[2].distance;
+    USS[3].mean = USS[3].mean + USS[3].distance;
+    USS[4].mean = USS[4].mean + USS[4].distance;
+
+    measuring();
+    getExtreamValues();
+    USS[0].mean = ( USS[0].mean + USS[0].distance - USS[0].farthest - USS[0].closest ) / 8;
+    USS[1].mean = ( USS[1].mean + USS[1].distance - USS[1].farthest - USS[1].closest ) / 8;
+    USS[2].mean = ( USS[2].mean + USS[2].distance - USS[2].farthest - USS[2].closest ) / 8;
+    USS[3].mean = ( USS[3].mean + USS[3].distance - USS[3].farthest - USS[3].closest ) / 8;
+    USS[4].mean = ( USS[4].mean + USS[4].distance - USS[4].farthest - USS[4].closest ) / 8;
+
+*/
+    if(USS[0].mean < minDist)
         return -1;
 
-    if (USS[1].distance < minDist)
-    if (USS[1].distance > 10)
+    if(USS[1].mean < minDist)
         return -1;
 
-    if (USS[2].distance < minDist)
-    if (USS[2].distance > 10)
+    if(USS[2].mean < minDist)
         return -1;
 
-    if (USS[3].distance < minDist)
-    if (USS[3].distance > 10)
+    if(USS[3].mean < minDist)
         return -1;
 
-    if (USS[4].distance < minDist)
-    if (USS[4].distance > 10)
+    if(USS[4].mean < minDist)
         return -1;
 
     return obstacleShape();
 }
 
-// returned value is seen as binary data: i-th bit represents the i-th sensor data (1 for warningDist, 0 otherwise)
-//Obs.: 1st sensor is the leftmost while the 5th, is the rightmost; that's why the first sensor is USS[4]!!!
 int obstacleShape()
 {
-    register int obstacle = 0;
+    int obstacle = 0;
 
-    if ((USS[4].distance < warningDist) && (USS[4].distance > 2))
-        obstacle += 1; // 1st bit <=> 1st sensor
+    if (USS[0].mean < warningDist) 
+        obstacle += B00001; // 1st bit <=> 1st sensor
 
-    if ((USS[3].distance < warningDist) && (USS[3].distance > 2))
-        obstacle += 2; // 2nd bit <=> 2nd sensor
+    if (USS[1].mean < warningDist) 
+        obstacle += B00010; // 2nd bit <=> 2nd sensor
 
-    if ((USS[2].distance < warningDist) && (USS[2].distance > 2))
-        obstacle += 4; // 3rd bit <=> 3rd sensor
+    if (USS[2].mean < warningDist) 
+        obstacle += B00100; // 3rd bit <=> 3rd sensor
 
-    if ((USS[1].distance < warningDist) && (USS[1].distance > 2))
-        obstacle += 8; // 4th bit <=> 4th sensor
+    if (USS[3].mean < warningDist) 
+        obstacle += B01000; // 4th bit <=> 4th sensor
 
-    if ((USS[0].distance < warningDist) && (USS[0].distance > 2))
-        obstacle += 16; // 5th bit <=> 5th sensor
+    if (USS[4].mean < warningDist) 
+        obstacle += B10000; // 5th bit <=> 5th sensor
 
     return obstacle;
 }
 
-/*--------------------------------------------------------------------------------------------------------------------------------------*/
+/*-------------------------------------------------------------------------------------------------------------------------------------*/
 
 
-/*==========================================  REMOTE CONTROL STUFF  ===================================================================*/ 
+/*==========================================  REMOTE CONTROL STUFF ===================================================================*/ 
 
 void status()
 {
@@ -657,31 +865,32 @@ void status()
 	char status[MaxPayload], aux[6]; //
 	int i;
 
-	status[0] = '\0';
 	status[0] = 48+left;
-	status[1] = ':';
+	status[1] = 'L';
 	status[2] = 48+right;
-	status[3] = ':';
+	status[3] = 'R';
 	status[4] = 48+speed;
-	status[5] = ':';
+	status[5] = 'S';
 	status[6] = 48+frequency;
-	status[7] = ':';
-	status[8] = '\0';
+	status[7] = 'f';
+	status[8] = '|';
+	status[9] = '\0';
 
 	int2char(aux,frequency_l);
 	concatenate(status,aux);
-	concatenate(status,":");
+	concatenate(status,"fL");
 
 	int2char(aux,pwm_value_l);
 	concatenate(status,aux);
-	concatenate(status,":");
+	concatenate(status,"SL");
 
 	int2char(aux,frequency_r);
 	concatenate(status,aux);
-	concatenate(status,":");
+	concatenate(status,"fR");
 
 	int2char(aux,pwm_value_r);
 	concatenate(status,aux);
+	concatenate(status,"SR");
 
 	write_command(status);
 
@@ -689,28 +898,30 @@ void status()
 
 void communication(bool mode)
 {
-	unsigned long T = micros();
+	unsigned long t_aux = millis();
 	bool w = 0,r = 0, quit = 0;
 
-	while( (micros() < T+T_com) | !(w&r)) 
-	{	
-
-		if(reading)
-			if(Read_blocking())
-			{
-				r = 1;
-				reading = 0;
-				if(select)
-					quit = processing(); // safety button status has been received
-			}
-			else;
-		else
-			if( quit || Write_blocking(mode) )
-			{
-				w = 1;
-				reading = 1;
-			}
-	}
+	while( (millis() < t_aux+t_com) && !(w&r) ) 
+    {	
+        if(reading)
+        {
+            if(Read_blocking())
+            {
+                r = 1;
+                reading = 0;
+                if(select)
+                    quit = processing(); // safety button status has been received
+            }
+        }
+        else
+        {
+            if( quit || Write_blocking(mode) )
+            {
+                w = 1;
+                reading = 1;
+            }
+        }
+    }
 }
 
 
@@ -746,6 +957,7 @@ void action(int n)
 
             case 4: //	   start
                 write_command("here we go!");
+                Write_nonBlocking(select);
                 start();
                 break;
 
@@ -777,6 +989,8 @@ void action(int n)
                 SensorsDataPrint();
                 break;
             case 11: //	obstacle avoidance 
+                write_command("autonomous navigation");
+                Write_nonBlocking(select);
                 autonomous();
                 break;
         }
@@ -784,11 +998,8 @@ void action(int n)
 
 void stop()
 {
-	if(right)
-		pwmWrite(rightmotor, stop_pwm_r);  // pwmWrite(pin, DUTY * 255 / 100);
-
-	if(left)
-		pwmWrite(leftmotor, stop_pwm_l);
+    pwmWrite(rightmotor, stop_pwm_r);  // pwmWrite(pin, DUTY * 255 / 100);
+    pwmWrite(leftmotor, stop_pwm_l);
 }
 
 void sweep()
@@ -863,44 +1074,33 @@ void sweep()
 
 void start()
 {
+    reading = 1;
+    radio.startListening();
+    delay(1000);
 
-	reading = 1;
-	radio.startListening();
-	delay(1000);
+    pwmWrite(rightmotor, pwm_value_r);  // pwmWrite(pin, DUTY * 255 / 100);
+    pwmWrite(leftmotor, pwm_value_l);
 
-	if(right)
-		pwmWrite(rightmotor, pwm_value_r);  // pwmWrite(pin, DUTY * 255 / 100);
+    t = millis();
+    while(millis() < t + t_start)
+    {
 
-	if(left)
-		pwmWrite(leftmotor, pwm_value_l);
-
-    t = micros();
-	if(right || left)
-        while(micros() < t + T_start)
+        if(radio.available())
         {
-
-            if(radio.available())
-            {
-                bool done = false;
-                while (!done)
-                    done = radio.read( rcv, sizeof(rcv) );
-            }
-
-            if(rcv[0] == '-')
-            {
-                break;
-            }
-            else if(rcv[0] == '+')
-            {
-                t = micros();
-            }
-            else
-            {
-                processing();
-            }
-            rcv[0] = '\0';
+            bool done = false;
+            while (!done && millis() < t + t_start)
+                done = radio.read( rcv, sizeof(rcv) );
         }
-		stop();
+
+        if(rcv[0] == '-')
+            break;
+
+        if(rcv[0] == '+')
+            t = millis();
+
+        rcv[0] = '\0';
+    }
+    stop();
 }
 
 bool processing()
@@ -950,9 +1150,9 @@ bool processing()
                     frequency = 0;
                     SetPinFrequencySafe(leftmotor, frequency_l);
                     if(right)
-                        concatenate(rcv," (freq_LnR)");
+                        concatenate(rcv," (freq L and R)");
                     else
-                        concatenate(rcv," (freq_L)");
+                        concatenate(rcv," (freq L)");
                     write_command(rcv);
                 }
 
@@ -963,19 +1163,21 @@ bool processing()
                     SetPinFrequencySafe(rightmotor, frequency_r);
                     if(!left)
                     {
-                        concatenate(rcv," (freq_R)");
+                        concatenate(rcv," (freq R)");
                         write_command(rcv);
                     }
                 }
             }
         }
-        else if( (  (rcv[0]=='+' || rcv[0]=='-') /* && (rcv[1]=='\0') */ )  )  // safety button status message
+        else if( (  (rcv[0]=='+' || rcv[0]=='-')  && (rcv[1]=='\0')  )  )  // safety button status message
         {	
             if(rcv[0] == '+')
                 safety_button = 1;
             else
+            {
                 safety_button = 0;
-            //return 1;
+                return 1;
+            }
         }
         else // nothing recognizable send it back
         {	
@@ -992,21 +1194,17 @@ bool processing()
 
 bool checkButton()
 {
-    if(Serial.available() == 0)
+    if(digitalRead(state) == HIGH)
     {
-        if(digitalRead(state) == HIGH)
-        {
-            msg[0] = '+';
-            msg[1] = '\0';
-            return 1;
-        }
-        else
-        {
-            msg[0] = '-';
-            msg[1] = '\0';
-            return 0;
-        }
-
+        msg[0] = '+';
+        msg[1] = '\0';
+        return 1;
+    }
+    else
+    {
+        msg[0] = '-';
+        msg[1] = '\0';
+        return 0;
     }
 }
 
@@ -1016,7 +1214,7 @@ void read_message()
         checkButton();
     else
     {
-        delay(1);
+        delay(100);
         int aux = 0;
         while(Serial.available() > 0)
             msg[aux++] = Serial.read();
@@ -1039,6 +1237,16 @@ void write_command(char *m)
 {
 	copyString(m,cmd);
 }
+
+/*
+int mypow(int base, int exponent)
+{
+    int result = 1;
+    for(int i = 0; i < exponent; i++)
+        result = result*base;
+    return result;
+}
+*/
 
 // TODO: make it generic
 int char2int(char *s)
@@ -1078,6 +1286,7 @@ int char2int(char *s)
     return -2;
 
 /*
+
     int i = 0,j, r = 0, aux;
 
     for(i = 0; i < MaxPayload; i++)
@@ -1103,9 +1312,8 @@ int char2int(char *s)
         {
             aux = (int) s[j];
             aux -= 48;
-            aux *= (int) pow(10,i-1-j);
+            aux *= (int) mypow(10,i-1-j);
             r += aux;
-            //r += (aux-48)*pow(10,i-j-1);	
         }
         else
         {
@@ -1173,9 +1381,8 @@ void setInternalCommands(char**m)
 	copyString("status",m[7]);
 	copyString("frequency",m[8]);
 	copyString("safety button",m[9]);
-	copyString("distances",m[10]);
+	copyString("distance",m[10]);
 	copyString("autonomous",m[11]);
-	//copyString("",m[]);
 
 }
 
@@ -1185,7 +1392,8 @@ bool isSubstring(char *a, char *b)
 
 	if((a[0] == '\0')||(b[0] == '\0'))
 	{
-		Serial.println("Empty string.");
+        if(!select)
+            Serial.println("Empty string.");
 		return 0;
 	}	
 
@@ -1210,11 +1418,11 @@ bool Read_blocking()
 	delay(1);
 	bool r = Read_nonBlocking();
 	unsigned int n = 0;
-	t = micros();
+	t = millis();
 
 	while(!r)
 	{
-		if(micros() > t+dt)
+		if(millis() > t+dt)
 			deadlockHandling(n++);
 
 		if(!reading)
@@ -1234,10 +1442,10 @@ bool Write_blocking(bool mode) // mode 0: user written command; mode 1: std_comm
     if(!mode)
         read_message();
     w = Write_nonBlocking(mode);
-    t = micros();
+    t = millis();
     while(!w)
     {
-        if(micros() > t+dt)
+        if(millis() > t+dt)
             deadlockHandling(n++);
 
         if(reading)
@@ -1254,33 +1462,14 @@ bool Write_blocking(bool mode) // mode 0: user written command; mode 1: std_comm
 
 void deadlockHandling(unsigned int n)
 {
-/*
-    if(!select)
-    {
-        Serial.print("Welcome to deadlockHandling function (");
-        Serial.print(n);
-        Serial.println(")");
-    }
-*/
-
     if(n < n_max)
     {
-        t += (unsigned long)random(t_min+n*dt, t_max);
+        t += (unsigned long)random(t_min, t_max);
         if(t%2)
         {
             reading = !reading;
-/*
-            if(!select)
-                Serial.println("toggle.");
-*/
         }
     }
-/*
-    else
-        if(!select)
-            Serial.println("deadlock.");
-*/
-
 }
 
 bool Read_nonBlocking() // tirei o startListening() daqui!!!!
@@ -1333,59 +1522,188 @@ bool Write_nonBlocking(bool mode)
 		return 0;
 }
 
+void debug(unsigned long T1, unsigned long T2)
+{
+    int OS = obstacleShape();
+    char aux[15];
+    radio.stopListening();
+
+    // Move
+    if( (USS[0].mean < minDist)||(USS[0].mean < minDist)||(USS[2].mean < minDist)||(USS[3].mean < minDist)||(USS[4].mean < minDist) )
+        concatenate(cmd,"STP");
+    else
+    {
+        if(OS > 0)
+            switch (T[OS])
+            {
+                case (E_L):
+                    concatenate(cmd,"E_L");
+                    break;
+                case (E_M):
+                    concatenate(cmd,"E_M");
+                    break;
+                case (E_F):
+                    concatenate(cmd,"E_F");
+                    break;
+                case (D_L):
+                    concatenate(cmd,"D_L");
+                    break;
+                case (D_M):
+                    concatenate(cmd,"D_M");
+                    break;
+                case (D_F):
+                    concatenate(cmd,"D_F");
+                    break;
+                case (Frente):
+                    concatenate(cmd,"Fre");
+                    break;
+            }
+        else
+            concatenate(cmd,"OoR");
+    }
+    concatenate(cmd,":");
+
+    // Obstacle Shape
+    if(OS >= 16)
+    {
+        OS = OS-16;
+        concatenate(cmd,"1");
+    }
+    else
+        concatenate(cmd,"0");
+    if(OS >= 8)
+    {
+        OS = OS-8;
+        concatenate(cmd,"1");
+    }
+    else
+        concatenate(cmd,"0");
+    if(OS >= 4)
+    {
+        OS = OS-4;
+        concatenate(cmd,"1");
+    }
+    else
+        concatenate(cmd,"0");
+    if(OS >= 2)
+    {
+        OS = OS-2;
+        concatenate(cmd,"1");
+    }
+    else
+        concatenate(cmd,"0");
+    if(OS >= 1)
+    {
+        OS = OS-1;
+        concatenate(cmd,"1");
+    }
+    else
+        concatenate(cmd,"0");
+
+    concatenate(cmd,"|");
+    // Safety Button
+    if(rcv[0] != '\0')
+        concatenate(cmd,rcv);
+    else
+        concatenate(cmd,"E");
+
+    concatenate(cmd,"|");
+    int2char(aux,T1);
+    concatenate(cmd,aux);
+    concatenate(cmd,"ms");
+    Write_nonBlocking(select);
+    radio.startListening();
+
+    rcv[0] = '\0';
+    cmd[0] = '\0';
+    aux[0] = '\0';
+
+}
+
 void autonomous()
 {
+    char status[MaxPayload];
+    status[0] = '\0';
 
     reading = 1;
     radio.startListening();
     delay(1000);
 
-    t = micros();
-    if(right || left)
-        while(micros() < t + T_start)
+
+    unsigned long T1, T2;
+
+    t = millis();
+    while(millis() < t + t_start)
+    {
+
+        T2 = millis();
+
+        if(radio.available())
         {
-
-            if(radio.available())
-            {
-                bool done = false;
-                while (!done)
-                    done = radio.read( rcv, sizeof(rcv) );
-            }
-
-            if(rcv[0] == '-')
-            {
-                break;
-            }
-            else if(rcv[0] == '+')
-            {
-                t = micros();
-            }
-            else
-            {
-                ObstacleAvoid();
-                //processing();
-            }
-            rcv[0] = '\0';
+            bool done = false;
+            while( (!done) && (millis() < t + t_start) ) // checa deadline por preciosismo...
+                done = radio.read( rcv, sizeof(rcv) );
         }
+
+        if(rcv[0] == '-')
+            break;
+        if(rcv[0] == '+')
+            t = millis();
+
+        debug(T1,T2);
+
+        ObstacleAvoid();
+
+        T1 = millis()-T2;
+    }
     stop();
 }
 
 void SensorsDataPrint()
 {
     int i;
-    char status[MaxPayload], aux[6]; //
+    char status[MaxPayload], aux[6];
     status[0] = '\0';
 
-    for (i = 0; i < 5; i++)
+    reading = 1;
+    radio.startListening();
+    measuring();
+
+
+    t = millis();
+    while(millis() < t + t_start)
     {
-        if (USS[i].distance >= 600 || USS[i].distance <= 2)
-            concatenate(status,"OoR:");
-        else
+        USS[0].mean = USS[0].distance;
+        USS[1].mean = USS[1].distance;
+        USS[2].mean = USS[2].distance;
+        USS[3].mean = USS[3].distance;
+        USS[4].mean = USS[4].distance;
+
+        for (i = 0; i < 5; i++)
         {
-            int2char(aux,USS[i].distance);
+            int2char(aux,USS[4-i].mean);
             concatenate(status,aux);
-            concatenate(status,":");
+            if(i<4)
+                concatenate(status,"|");
         }
+        if(radio.available())
+        {
+            bool done = false;
+            while( (!done) && (millis() < t + t_start) ) // checa deadline por preciosismo...
+                done = radio.read( rcv, sizeof(rcv) );
+        }
+        if(rcv[0] == '-')
+            break;
+        if(rcv[0] == '+')
+            t = millis();
+
+        write_command(status);
+        radio.stopListening();
+        Write_nonBlocking(select);
+        radio.startListening();
+        measuring();
+        status[0] = '\0';
+        rcv[0] = '\0';
+        aux[0] = '\0';
     }
-    write_command(status);
 }
