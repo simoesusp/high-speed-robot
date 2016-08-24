@@ -39,6 +39,14 @@
 #define lowSpeed_l 120
 #define lowSpeed_r 100
 
+/*
+120 120: esquerda
+120 100: levemente direita
+120 110: esquerda
+150 150: levemente para a direita
+
+*/
+
 
 // --------- deadlines (in millisseconds)----------------------------
 #define dt 1 // time increment for the deadlock handling routine
@@ -1084,6 +1092,11 @@ void start()
     t = millis();
     while(millis() < t + t_start)
     {
+        if( SensorReading() < 0)
+        {
+            write_command("not safe!");
+            break;
+        }
 
         if(radio.available())
         {
