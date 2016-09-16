@@ -147,7 +147,7 @@ bool Read_blocking();
 bool Write_nonBlocking(bool);
 bool Write_blocking(bool);
 void deadlockHandling(unsigned int);
-void debug(unsigned long, unsigned long);
+void statusFeedback(unsigned long, unsigned long, char);
 
 //---------- string handling functions -------------
 void concatenate(char *, char *);
@@ -1082,20 +1082,35 @@ void sweep()
 
 void start()
 {
+    unsigned long T1, T2;
+    char iteration = '0'; // check for packet loss
+    bool safe = 0;
     reading = 1;
     radio.startListening();
     delay(1000);
 
-    pwmWrite(rightmotor, pwm_value_r);  // pwmWrite(pin, DUTY * 255 / 100);
-    pwmWrite(leftmotor, pwm_value_l);
-
     t = millis();
     while(millis() < t + t_start)
     {
+        T2 = millis();
         if( SensorReading() < 0)
         {
             write_command("not safe!");
-            break;
+            if(safe) // only write to PWM if its value will be changed
+            {
+                stop();
+                safe = 0;
+            }
+        }
+        else
+        {
+            if(!safe) // only write to PWM if its value will be changed
+            {
+                pwmWrite(rightmotor, pwm_value_r);
+                pwmWrite(leftmotor, pwm_value_l);
+                safe = 1;
+            }
+
         }
 
         if(radio.available())
@@ -1111,7 +1126,13 @@ void start()
         if(rcv[0] == '+')
             t = millis();
 
+        statusFeedback(T1,T2,iteration);
+        T1 = millis()-T2;
         rcv[0] = '\0';
+        if (iteration == '9')
+            iteration = '0';
+        else 
+            iteration++;
     }
     stop();
 }
@@ -1535,12 +1556,16 @@ bool Write_nonBlocking(bool mode)
 		return 0;
 }
 
-void debug(unsigned long T1, unsigned long T2)
+void statusFeedback(unsigned long T1, unsigned long T2, char iteration)
 {
     int OS = obstacleShape();
     char aux[15];
     radio.stopListening();
 
+    cmd[0] = '[';
+    cmd[1] = iteration;
+    cmd[2] = ']';
+    cmd[3] = '\0';
     // Move
     if( (USS[0].mean < minDist)||(USS[0].mean < minDist)||(USS[2].mean < minDist)||(USS[3].mean < minDist)||(USS[4].mean < minDist) )
         concatenate(cmd,"STP");
@@ -1574,53 +1599,71 @@ void debug(unsigned long T1, unsigned long T2)
         else
             concatenate(cmd,"OoR");
     }
-    concatenate(cmd,":");
 
     // Obstacle Shape
     if(OS >= 16)
     {
         OS = OS-16;
-        concatenate(cmd,"1");
-    }
-    else
-        concatenate(cmd,"0");
-    if(OS >= 8)
-    {
-        OS = OS-8;
-        concatenate(cmd,"1");
-    }
-    else
-        concatenate(cmd,"0");
-    if(OS >= 4)
-    {
-        OS = OS-4;
-        concatenate(cmd,"1");
-    }
-    else
-        concatenate(cmd,"0");
-    if(OS >= 2)
-    {
-        OS = OS-2;
-        concatenate(cmd,"1");
-    }
-    else
-        concatenate(cmd,"0");
-    if(OS >= 1)
-    {
-        OS = OS-1;
-        concatenate(cmd,"1");
+        if(USS[4].mean < minDist)
+            concatenate(cmd,"!");
+        else
+            concatenate(cmd,"1");
     }
     else
         concatenate(cmd,"0");
 
-    concatenate(cmd,"|");
+    if(OS >= 8)
+    {
+        OS = OS-8;
+        if(USS[3].mean < minDist)
+            concatenate(cmd,"!");
+        else
+            concatenate(cmd,"1");
+    }
+    else
+        concatenate(cmd,"0");
+
+    if(OS >= 4)
+    {
+        OS = OS-4;
+        if(USS[2].mean < minDist)
+            concatenate(cmd,"!");
+        else
+            concatenate(cmd,"1");
+    }
+    else
+        concatenate(cmd,"0");
+
+    if(OS >= 2)
+    {
+        OS = OS-2;
+        if(USS[1].mean < minDist)
+            concatenate(cmd,"!");
+        else
+            concatenate(cmd,"1");
+    }
+    else
+        concatenate(cmd,"0");
+
+    if(OS >= 1)
+    {
+        OS = OS-1;
+        if(USS[0].mean < minDist)
+            concatenate(cmd,"!");
+        else
+            concatenate(cmd,"1");
+    }
+    else
+        concatenate(cmd,"0");
+
     // Safety Button
+    concatenate(cmd," (");
     if(rcv[0] != '\0')
         concatenate(cmd,rcv);
     else
         concatenate(cmd,"E");
-
-    concatenate(cmd,"|");
+    concatenate(cmd,") ");
+    // Time Functions
     int2char(aux,T1);
     concatenate(cmd,aux);
     concatenate(cmd,"ms");
@@ -1630,12 +1673,12 @@ void debug(unsigned long T1, unsigned long T2)
     rcv[0] = '\0';
     cmd[0] = '\0';
     aux[0] = '\0';
-
 }
 
+// ser mais rigoroso ao parar o carrinho. Verificar se é somente um sensor com medidas erradas.
 void autonomous()
 {
-    char status[MaxPayload];
+    char status[MaxPayload], iteration = '0'; // check for packet loss
     status[0] = '\0';
 
     reading = 1;
@@ -1663,11 +1706,16 @@ void autonomous()
         if(rcv[0] == '+')
             t = millis();
 
-        debug(T1,T2);
+        statusFeedback(T1,T2,iteration);
 
         ObstacleAvoid();
 
         T1 = millis()-T2;
+
+        if (iteration == '9')
+            iteration = '0';
+        else 
+            iteration++;
     }
     stop();
 }
@@ -1675,7 +1723,7 @@ void autonomous()
 void SensorsDataPrint()
 {
     int i;
-    char status[MaxPayload], aux[6];
+    char status[MaxPayload], aux[6],iteration = '0';
     status[0] = '\0';
 
     reading = 1;
@@ -1686,6 +1734,11 @@ void SensorsDataPrint()
     t = millis();
     while(millis() < t + t_start)
     {
+        status[0] = '[';
+        status[1] = iteration;
+        status[2] = ']';
+        status[3] = '\0';
+
         USS[0].mean = USS[0].distance;
         USS[1].mean = USS[1].distance;
         USS[2].mean = USS[2].distance;
@@ -1715,8 +1768,12 @@ void SensorsDataPrint()
         Write_nonBlocking(select);
         radio.startListening();
         measuring();
-        status[0] = '\0';
         rcv[0] = '\0';
         aux[0] = '\0';
+
+        if (iteration == '9')
+            iteration = '0';
+        else 
+            iteration++;
     }
 }
