@@ -57,7 +57,7 @@
 #define n_max 10 // number of attemptives to handle deadlock
 
 //TODO: pq medir além da regiao de atenção??
-#define time_out 60 // USS reading deadline <=> 6.8m (datasheet fala que só vai até 4m...)
+#define time_out 30 // USS reading deadline <=> 6.8m (datasheet fala que só vai até 4m...)
 // maximum time (milliseconds) allowed to wait for the previous pulse in sensors echoPin to end
 
 // RADIO RELATED
@@ -124,15 +124,16 @@ struct sensor_t
     uint8_t port;
     bool data_available; // HIGH => distance is up to date, LOW => reading data || no obstacle detected during last reading operation.
     unsigned long duration; // pulse duration in echoPin.
-    unsigned int distance; // current obstacle distance calculated.
+    unsigned int distance[5]; // current obstacle distance calculated.
     unsigned int farthest; // farthest obstacle distance calculated (10 measures iteration).
     unsigned int closest; // closest obstacle distance calculated (10 measures iteration).
     unsigned int mean; // mean obstacle distance calculated (10 measures iteration).
+    short int pointer; // points to most recent data in circular vector distance.
 } USS[5]; 
 
 bool safety_button;
 
-bool select = 0; // 0: master(remote control) ; 1: slave(robot) 
+bool select = 1; // 0: master(remote control) ; 1: slave(robot) 
 
 int *T;                  // Truth Table
 
@@ -289,18 +290,27 @@ void SensorSettings()
 {
     USS[0].Bit = digitalPinToBitMask(echoPin0);
     USS[0].port = digitalPinToPort(echoPin0);
+    USS[0].pointer = 0;
 
     USS[1].Bit = digitalPinToBitMask(echoPin1);
     USS[1].port = digitalPinToPort(echoPin1);
+    USS[1].pointer = 0;
 
     USS[2].Bit = digitalPinToBitMask(echoPin2);
     USS[2].port = digitalPinToPort(echoPin2);
+    USS[2].pointer = 0;
 
     USS[3].Bit = digitalPinToBitMask(echoPin3);
     USS[3].port = digitalPinToPort(echoPin3);
+    USS[3].pointer = 0;
 
     USS[4].Bit = digitalPinToBitMask(echoPin4);
     USS[4].port = digitalPinToPort(echoPin4);
+    USS[4].pointer = 0;
+
+    for(int i = 0; i < 5; i++)
+        for(int j = 0; j < 5; j++)
+            USS[i].distance[j] = 0;
 }
 
 
@@ -621,108 +631,231 @@ void speedControl(int obstacle)
 
 void getExtreamValues()
 {
-    if(USS[0].farthest < USS[0].distance)
-        USS[0].farthest = USS[0].distance;
-    if(USS[0].closest > USS[0].distance)
-        USS[0].closest = USS[0].distance;
+    // 0
+    USS[0].farthest = USS[0].distance[0];
+    USS[0].closest = USS[0].distance[0];
+    USS[0].mean = USS[0].distance[0];
 
-    if(USS[1].farthest < USS[1].distance)
-        USS[1].farthest = USS[1].distance;
-    if(USS[1].closest > USS[1].distance)
-        USS[1].closest = USS[1].distance;
+    USS[1].farthest = USS[1].distance[0];
+    USS[1].closest = USS[1].distance[0];
+    USS[1].mean = USS[1].distance[0];
 
-    if(USS[2].farthest < USS[2].distance)
-        USS[2].farthest = USS[2].distance;
-    if(USS[2].closest > USS[2].distance)
-        USS[2].closest = USS[2].distance;
+    USS[2].farthest = USS[2].distance[0];
+    USS[2].closest = USS[2].distance[0];
+    USS[2].mean = USS[2].distance[0];
 
-    if(USS[3].farthest < USS[3].distance)
-        USS[3].farthest = USS[3].distance;
-    if(USS[3].closest > USS[3].distance)
-        USS[3].closest = USS[3].distance;
+    USS[3].farthest = USS[3].distance[0];
+    USS[3].closest = USS[3].distance[0];
+    USS[3].mean = USS[3].distance[0];
 
-    if(USS[4].farthest < USS[4].distance)
-        USS[4].farthest = USS[4].distance;
-    if(USS[4].closest > USS[4].distance)
-        USS[4].closest = USS[4].distance;
+    USS[4].farthest = USS[4].distance[0];
+    USS[4].closest = USS[4].distance[0];
+    USS[4].mean = USS[4].distance[0];
+
+    // 1
+    if(USS[0].farthest < USS[0].distance[1])
+        USS[0].farthest = USS[0].distance[1];
+    if(USS[0].closest > USS[0].distance[1])
+        USS[0].closest = USS[0].distance[1];
+    USS[0].mean = USS[0].mean + USS[0].distance[1];
+
+    if(USS[1].farthest < USS[1].distance[1])
+        USS[1].farthest = USS[1].distance[1];
+    if(USS[1].closest > USS[1].distance[1])
+        USS[1].closest = USS[1].distance[1];
+    USS[1].mean = USS[1].mean + USS[1].distance[1];
+
+    if(USS[2].farthest < USS[2].distance[1])
+        USS[2].farthest = USS[2].distance[1];
+    if(USS[2].closest > USS[2].distance[1])
+        USS[2].closest = USS[2].distance[1];
+    USS[2].mean = USS[2].mean + USS[2].distance[1];
+
+    if(USS[3].farthest < USS[3].distance[1])
+        USS[3].farthest = USS[3].distance[1];
+    if(USS[3].closest > USS[3].distance[1])
+        USS[3].closest = USS[3].distance[1];
+    USS[3].mean = USS[3].mean + USS[3].distance[1];
+
+    if(USS[4].farthest < USS[4].distance[1])
+        USS[4].farthest = USS[4].distance[1];
+    if(USS[4].closest > USS[4].distance[1])
+        USS[4].closest = USS[4].distance[1];
+    USS[4].mean = USS[4].mean + USS[4].distance[1];
+
+    // 2
+    if(USS[0].farthest < USS[0].distance[2])
+        USS[0].farthest = USS[0].distance[2];
+    if(USS[0].closest > USS[0].distance[2])
+        USS[0].closest = USS[0].distance[2];
+    USS[0].mean = USS[0].mean + USS[0].distance[2];
+
+    if(USS[1].farthest < USS[1].distance[2])
+        USS[1].farthest = USS[1].distance[2];
+    if(USS[1].closest > USS[1].distance[2])
+        USS[1].closest = USS[1].distance[2];
+    USS[1].mean = USS[1].mean + USS[1].distance[2];
+
+    if(USS[2].farthest < USS[2].distance[2])
+        USS[2].farthest = USS[2].distance[2];
+    if(USS[2].closest > USS[2].distance[2])
+        USS[2].closest = USS[2].distance[2];
+    USS[2].mean = USS[2].mean + USS[2].distance[2];
+
+    if(USS[3].farthest < USS[3].distance[2])
+        USS[3].farthest = USS[3].distance[2];
+    if(USS[3].closest > USS[3].distance[2])
+        USS[3].closest = USS[3].distance[2];
+    USS[3].mean = USS[3].mean + USS[3].distance[2];
+
+    if(USS[4].farthest < USS[4].distance[2])
+        USS[4].farthest = USS[4].distance[2];
+    if(USS[4].closest > USS[4].distance[2])
+        USS[4].closest =+ USS[4].distance[2];
+    USS[4].mean = USS[4].mean + USS[4].distance[2];
+
+    // 3
+    if(USS[0].farthest < USS[0].distance[3])
+        USS[0].farthest = USS[0].distance[3];
+    if(USS[0].closest > USS[0].distance[3])
+        USS[0].closest = USS[0].distance[3];
+    USS[0].mean = USS[0].mean + USS[0].distance[3];
+
+    if(USS[1].farthest < USS[1].distance[3])
+        USS[1].farthest = USS[1].distance[3];
+    if(USS[1].closest > USS[1].distance[3])
+        USS[1].closest = USS[1].distance[3];
+    USS[1].mean = USS[1].mean + USS[1].distance[3];
+
+    if(USS[2].farthest < USS[2].distance[3])
+        USS[2].farthest = USS[2].distance[3];
+    if(USS[2].closest > USS[2].distance[3])
+        USS[2].closest = USS[2].distance[3];
+    USS[2].mean = USS[2].mean + USS[2].distance[3];
+
+    if(USS[3].farthest < USS[3].distance[3])
+        USS[3].farthest = USS[3].distance[3];
+    if(USS[3].closest > USS[3].distance[3])
+        USS[3].closest = USS[3].distance[3];
+    USS[3].mean = USS[3].mean + USS[3].distance[3];
+
+    if(USS[4].farthest < USS[4].distance[3])
+        USS[4].farthest = USS[4].distance[3];
+    if(USS[4].closest > USS[4].distance[3])
+        USS[4].closest =+ USS[4].distance[3];
+    USS[4].mean = USS[4].mean + USS[4].distance[3];
+
+    // 4
+    if(USS[0].farthest < USS[0].distance[4])
+        USS[0].farthest = USS[0].distance[4];
+    if(USS[0].closest > USS[0].distance[4])
+        USS[0].closest = USS[0].distance[4];
+    USS[0].mean = USS[0].mean + USS[0].distance[4];
+
+    if(USS[1].farthest < USS[1].distance[4])
+        USS[1].farthest = USS[1].distance[4];
+    if(USS[1].closest > USS[1].distance[4])
+        USS[1].closest = USS[1].distance[4];
+    USS[1].mean = USS[1].mean + USS[1].distance[4];
+
+    if(USS[2].farthest < USS[2].distance[4])
+        USS[2].farthest = USS[2].distance[4];
+    if(USS[2].closest > USS[2].distance[4])
+        USS[2].closest = USS[2].distance[4];
+    USS[2].mean = USS[2].mean + USS[2].distance[4];
+
+    if(USS[3].farthest < USS[3].distance[4])
+        USS[3].farthest = USS[3].distance[4];
+    if(USS[3].closest > USS[3].distance[4])
+        USS[3].closest = USS[3].distance[4];
+    USS[3].mean = USS[3].mean + USS[3].distance[4];
+
+    if(USS[4].farthest < USS[4].distance[4])
+        USS[4].farthest = USS[4].distance[4];
+    if(USS[4].closest > USS[4].distance[4])
+        USS[4].closest = USS[4].distance[4];
+    USS[4].mean = USS[4].mean + USS[4].distance[4];
+
+
+    USS[0].mean = ( USS[0].mean - USS[0].farthest - USS[0].closest ) / 3;
+
+    USS[1].mean = ( USS[1].mean - USS[1].farthest - USS[1].closest ) / 3;
+
+    USS[2].mean = ( USS[2].mean - USS[2].farthest - USS[2].closest ) / 3;
+
+    USS[3].mean = ( USS[3].mean - USS[3].farthest - USS[3].closest ) / 3;
+
+    USS[4].mean = ( USS[4].mean - USS[4].farthest - USS[4].closest ) / 3;
 }
 
 void measuring()
 {
     if( myPulseIn() )
     {
-        USS[0].distance = USS[0].duration / 58.2;
-        USS[1].distance = USS[1].duration / 58.2;
-        USS[2].distance = USS[2].duration / 58.2;
-        USS[3].distance = USS[3].duration / 58.2;
-        USS[4].distance = USS[4].duration / 58.2;
+        USS[0].distance[USS[0].pointer] = USS[0].duration / 58.2;
+        USS[1].distance[USS[1].pointer] = USS[1].duration / 58.2;
+        USS[2].distance[USS[2].pointer] = USS[2].duration / 58.2;
+        USS[3].distance[USS[3].pointer] = USS[3].duration / 58.2;
+        USS[4].distance[USS[4].pointer] = USS[4].duration / 58.2;
     }
     else
     {
         if(USS[0].data_available)
-            USS[0].distance = USS[0].duration / 58.2;
+            USS[0].distance[USS[0].pointer] = USS[0].duration / 58.2;
         else
-            USS[0].distance = outOfRange;
+            USS[0].distance[USS[0].pointer] = outOfRange;
 
         if(USS[1].data_available)
-            USS[1].distance = USS[1].duration / 58.2;
+            USS[1].distance[USS[1].pointer] = USS[1].duration / 58.2;
         else
-            USS[1].distance = outOfRange;
+            USS[1].distance[USS[1].pointer] = outOfRange;
 
         if(USS[2].data_available)
-            USS[2].distance = USS[2].duration / 58.2;
+            USS[2].distance[USS[2].pointer] = USS[2].duration / 58.2;
         else
-            USS[2].distance = outOfRange;
+            USS[2].distance[USS[2].pointer] = outOfRange;
 
         if(USS[3].data_available)
-            USS[3].distance = USS[3].duration / 58.2;
+            USS[3].distance[USS[3].pointer] = USS[3].duration / 58.2;
         else
-            USS[3].distance = outOfRange;
+            USS[3].distance[USS[3].pointer] = outOfRange;
 
         if(USS[4].data_available)
-            USS[4].distance = USS[4].duration / 58.2;
+            USS[4].distance[USS[4].pointer] = USS[4].duration / 58.2;
         else
-            USS[4].distance = outOfRange;
+            USS[4].distance[USS[4].pointer] = outOfRange;
     }
 
+    if(USS[0].pointer == 4)
+        USS[0].pointer = 0;
+    else
+        USS[0].pointer = USS[0].pointer + 1;
+
+    if(USS[1].pointer == 4)
+        USS[1].pointer = 0;
+    else
+        USS[1].pointer = USS[1].pointer + 1;
+
+    if(USS[2].pointer == 4)
+        USS[2].pointer = 0;
+    else
+        USS[2].pointer = USS[2].pointer + 1;
+
+    if(USS[3].pointer == 4)
+        USS[3].pointer = 0;
+    else
+        USS[3].pointer = USS[3].pointer + 1;
+
+    if(USS[4].pointer == 4)
+        USS[4].pointer = 0;
+    else
+        USS[4].pointer = USS[4].pointer + 1;
 }
 
 int SensorReading()
 {
     measuring();
-
-    USS[0].mean = USS[0].distance;
-    USS[0].farthest = USS[0].distance;
-    USS[0].closest = USS[0].distance;
-    USS[1].mean = USS[1].distance;
-    USS[1].farthest = USS[1].distance;
-    USS[1].closest = USS[1].distance;
-    USS[2].mean = USS[2].distance;
-    USS[2].farthest = USS[2].distance;
-    USS[2].closest = USS[2].distance;
-    USS[3].mean = USS[3].distance;
-    USS[3].farthest = USS[3].distance;
-    USS[3].closest = USS[3].distance;
-    USS[4].mean = USS[4].distance;
-    USS[4].farthest = USS[4].distance;
-    USS[4].closest = USS[4].distance;
-
-/*
-    measuring();
     getExtreamValues();
-    measuring();
-    getExtreamValues();
-    measuring();
-    getExtreamValues();
-    measuring();
-    getExtreamValues();
-
-    USS[0].mean = ( USS[0].mean - USS[0].closest ) / 4;
-    USS[1].mean = ( USS[1].mean - USS[1].closest ) / 4;
-    USS[2].mean = ( USS[2].mean - USS[2].closest ) / 4;
-    USS[3].mean = ( USS[3].mean - USS[3].closest ) / 4;
-    USS[4].mean = ( USS[4].mean - USS[4].closest ) / 4;
-*/
 
     if(USS[0].mean < minDist)
         return -1;
@@ -1644,6 +1777,7 @@ void SensorsDataPrint()
     reading = 1;
     radio.startListening();
     measuring();
+    getExtreamValues();
 
 
     t = millis();
@@ -1653,12 +1787,6 @@ void SensorsDataPrint()
         status[1] = iteration;
         status[2] = ']';
         status[3] = '\0';
-
-        USS[0].mean = USS[0].distance;
-        USS[1].mean = USS[1].distance;
-        USS[2].mean = USS[2].distance;
-        USS[3].mean = USS[3].distance;
-        USS[4].mean = USS[4].distance;
 
         for (i = 0; i < 5; i++)
         {
@@ -1683,6 +1811,7 @@ void SensorsDataPrint()
         Write_nonBlocking(select);
         radio.startListening();
         measuring();
+        getExtreamValues();
         rcv[0] = '\0';
         aux[0] = '\0';
 
