@@ -57,7 +57,7 @@
 #define n_max 10 // number of attemptives to handle deadlock
 
 //TODO: pq medir além da regiao de atenção??
-#define time_out 30 // USS reading deadline <=> 6.8m (datasheet fala que só vai até 4m...)
+#define time_out 60 // USS reading deadline <=> 6.8m (datasheet fala que só vai até 4m...)
 // maximum time (milliseconds) allowed to wait for the previous pulse in sensors echoPin to end
 
 // RADIO RELATED
@@ -124,15 +124,15 @@ struct sensor_t
     uint8_t port;
     bool data_available; // HIGH => distance is up to date, LOW => reading data || no obstacle detected during last reading operation.
     unsigned long duration; // pulse duration in echoPin.
-    unsigned long distance; // current obstacle distance calculated.
-    unsigned long farthest; // farthest obstacle distance calculated (10 measures iteration).
-    unsigned long closest; // closest obstacle distance calculated (10 measures iteration).
-    unsigned long mean; // mean obstacle distance calculated (10 measures iteration).
+    unsigned int distance; // current obstacle distance calculated.
+    unsigned int farthest; // farthest obstacle distance calculated (10 measures iteration).
+    unsigned int closest; // closest obstacle distance calculated (10 measures iteration).
+    unsigned int mean; // mean obstacle distance calculated (10 measures iteration).
 } USS[5]; 
 
 bool safety_button;
 
-bool select = 1; // 0: master(remote control) ; 1: slave(robot) 
+bool select = 0; // 0: master(remote control) ; 1: slave(robot) 
 
 int *T;                  // Truth Table
 
@@ -147,7 +147,8 @@ bool Read_blocking();
 bool Write_nonBlocking(bool);
 bool Write_blocking(bool);
 void deadlockHandling(unsigned int);
-void statusFeedback(unsigned long, unsigned long, char);
+void statusFeedback(char);
+void writeSensorsData();
 
 //---------- string handling functions -------------
 void concatenate(char *, char *);
@@ -183,8 +184,11 @@ void initTable(int *T);
 void setup()
 {
     //------------------------ nRF24L01+ transceiver Settings -----------
-	Serial.begin(9600);
+	//Serial.begin(9600);
+	Serial.begin(115200);
 	radio.begin();
+    radio.setRetries(1,15);
+    radio.setDataRate(RF24_250KBPS);
 	radio.enableAckPayload();
 	radio.enableDynamicPayloads();
 	radio.openReadingPipe(1,pipes[(int)!select]);
@@ -349,6 +353,12 @@ int myPulseIn()
     USS[4].data_available = LOW;
     USS[4].duration = 0;
 
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+
     while (!finished)
     {
         if (!(USS[0].data_available)) // if data hasn't already been read
@@ -510,6 +520,9 @@ int myPulseIn()
             return 0;
         finished =  USS[0].data_available &  USS[1].data_available &  USS[2].data_available &  USS[3].data_available & USS[4].data_available;
     }
+
+    while(millis() < initTime + time_out) ; // TODO: wasted time, find out something useful to do here.
+
     return 1;
 }
 
@@ -636,12 +649,6 @@ void getExtreamValues()
 
 void measuring()
 {
-    digitalWrite(trigPin, LOW);
-    delayMicroseconds(2);
-    digitalWrite(trigPin, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(trigPin, LOW);
-
     if( myPulseIn() )
     {
         USS[0].distance = USS[0].duration / 58.2;
@@ -678,36 +685,29 @@ void measuring()
             USS[4].distance = outOfRange;
     }
 
-// TODO: tirar isso daqui! ou não...
-    USS[0].mean = USS[0].mean + USS[0].distance;
-    USS[1].mean = USS[1].mean + USS[1].distance;
-    USS[2].mean = USS[2].mean + USS[2].distance;
-    USS[3].mean = USS[3].mean + USS[3].distance;
-    USS[4].mean = USS[4].mean + USS[4].distance;
 }
 
 int SensorReading()
 {
-    USS[0].mean = 0;
-    USS[0].farthest = 0;
-    USS[0].closest = 600;
+    measuring();
 
-    USS[1].mean = 0;
-    USS[1].farthest = 0;
-    USS[1].closest = 600;
+    USS[0].mean = USS[0].distance;
+    USS[0].farthest = USS[0].distance;
+    USS[0].closest = USS[0].distance;
+    USS[1].mean = USS[1].distance;
+    USS[1].farthest = USS[1].distance;
+    USS[1].closest = USS[1].distance;
+    USS[2].mean = USS[2].distance;
+    USS[2].farthest = USS[2].distance;
+    USS[2].closest = USS[2].distance;
+    USS[3].mean = USS[3].distance;
+    USS[3].farthest = USS[3].distance;
+    USS[3].closest = USS[3].distance;
+    USS[4].mean = USS[4].distance;
+    USS[4].farthest = USS[4].distance;
+    USS[4].closest = USS[4].distance;
 
-    USS[2].mean = 0;
-    USS[2].farthest = 0;
-    USS[2].closest = 600;
-
-    USS[3].mean = 0;
-    USS[3].farthest = 0;
-    USS[3].closest = 600;
-
-    USS[4].mean = 0;
-    USS[4].farthest = 0;
-    USS[4].closest = 600;
-
+/*
     measuring();
     getExtreamValues();
     measuring();
@@ -716,110 +716,14 @@ int SensorReading()
     getExtreamValues();
     measuring();
     getExtreamValues();
-    measuring();
-    getExtreamValues();
+
     USS[0].mean = ( USS[0].mean - USS[0].closest ) / 4;
     USS[1].mean = ( USS[1].mean - USS[1].closest ) / 4;
     USS[2].mean = ( USS[2].mean - USS[2].closest ) / 4;
     USS[3].mean = ( USS[3].mean - USS[3].closest ) / 4;
     USS[4].mean = ( USS[4].mean - USS[4].closest ) / 4;
-
-/*
-    measuring();
-    USS[0].mean = USS[0].distance;
-    USS[0].farthest = USS[0].distance;
-    USS[0].closest = USS[0].distance;
-
-    USS[1].mean = USS[1].distance;
-    USS[1].farthest = USS[1].distance;
-    USS[1].closest = USS[1].distance;
-
-    USS[2].mean = USS[2].distance;
-    USS[2].farthest = USS[2].distance;
-    USS[2].closest = USS[2].distance;
-
-    USS[3].mean = USS[3].distance;
-    USS[3].farthest = USS[3].distance;
-    USS[3].closest = USS[3].distance;
-
-    USS[4].mean = USS[4].distance;
-    USS[4].farthest = USS[4].distance;
-    USS[4].closest = USS[4].distance;
-
-
-    measuring();
-    getExtreamValues();
-    USS[0].mean = USS[0].mean + USS[0].distance;
-    USS[1].mean = USS[1].mean + USS[1].distance;
-    USS[2].mean = USS[2].mean + USS[2].distance;
-    USS[3].mean = USS[3].mean + USS[3].distance;
-    USS[4].mean = USS[4].mean + USS[4].distance;
-
-    measuring();
-    getExtreamValues();
-    USS[0].mean = USS[0].mean + USS[0].distance;
-    USS[1].mean = USS[1].mean + USS[1].distance;
-    USS[2].mean = USS[2].mean + USS[2].distance;
-    USS[3].mean = USS[3].mean + USS[3].distance;
-    USS[4].mean = USS[4].mean + USS[4].distance;
-
-    measuring();
-    getExtreamValues();
-    USS[0].mean = USS[0].mean + USS[0].distance;
-    USS[1].mean = USS[1].mean + USS[1].distance;
-    USS[2].mean = USS[2].mean + USS[2].distance;
-    USS[3].mean = USS[3].mean + USS[3].distance;
-    USS[4].mean = USS[4].mean + USS[4].distance;
-
-    measuring();
-    getExtreamValues();
-    USS[0].mean = USS[0].mean + USS[0].distance;
-    USS[1].mean = USS[1].mean + USS[1].distance;
-    USS[2].mean = USS[2].mean + USS[2].distance;
-    USS[3].mean = USS[3].mean + USS[3].distance;
-    USS[4].mean = USS[4].mean + USS[4].distance;
-
-    measuring();
-    getExtreamValues();
-    USS[0].mean = USS[0].mean + USS[0].distance;
-    USS[1].mean = USS[1].mean + USS[1].distance;
-    USS[2].mean = USS[2].mean + USS[2].distance;
-    USS[3].mean = USS[3].mean + USS[3].distance;
-    USS[4].mean = USS[4].mean + USS[4].distance;
-
-    measuring();
-    getExtreamValues();
-    USS[0].mean = USS[0].mean + USS[0].distance;
-    USS[1].mean = USS[1].mean + USS[1].distance;
-    USS[2].mean = USS[2].mean + USS[2].distance;
-    USS[3].mean = USS[3].mean + USS[3].distance;
-    USS[4].mean = USS[4].mean + USS[4].distance;
-
-    measuring();
-    getExtreamValues();
-    USS[0].mean = USS[0].mean + USS[0].distance;
-    USS[1].mean = USS[1].mean + USS[1].distance;
-    USS[2].mean = USS[2].mean + USS[2].distance;
-    USS[3].mean = USS[3].mean + USS[3].distance;
-    USS[4].mean = USS[4].mean + USS[4].distance;
-
-    measuring();
-    getExtreamValues();
-    USS[0].mean = USS[0].mean + USS[0].distance;
-    USS[1].mean = USS[1].mean + USS[1].distance;
-    USS[2].mean = USS[2].mean + USS[2].distance;
-    USS[3].mean = USS[3].mean + USS[3].distance;
-    USS[4].mean = USS[4].mean + USS[4].distance;
-
-    measuring();
-    getExtreamValues();
-    USS[0].mean = ( USS[0].mean + USS[0].distance - USS[0].farthest - USS[0].closest ) / 8;
-    USS[1].mean = ( USS[1].mean + USS[1].distance - USS[1].farthest - USS[1].closest ) / 8;
-    USS[2].mean = ( USS[2].mean + USS[2].distance - USS[2].farthest - USS[2].closest ) / 8;
-    USS[3].mean = ( USS[3].mean + USS[3].distance - USS[3].farthest - USS[3].closest ) / 8;
-    USS[4].mean = ( USS[4].mean + USS[4].distance - USS[4].farthest - USS[4].closest ) / 8;
-
 */
+
     if(USS[0].mean < minDist)
         return -1;
 
@@ -1082,7 +986,6 @@ void sweep()
 
 void start()
 {
-    unsigned long T1, T2;
     char iteration = '0'; // check for packet loss
     bool safe = 0;
     reading = 1;
@@ -1092,10 +995,8 @@ void start()
     t = millis();
     while(millis() < t + t_start)
     {
-        T2 = millis();
         if( SensorReading() < 0)
         {
-            write_command("not safe!");
             if(safe) // only write to PWM if its value will be changed
             {
                 stop();
@@ -1126,8 +1027,7 @@ void start()
         if(rcv[0] == '+')
             t = millis();
 
-        statusFeedback(T1,T2,iteration);
-        T1 = millis()-T2;
+        statusFeedback(iteration);
         rcv[0] = '\0';
         if (iteration == '9')
             iteration = '0';
@@ -1518,7 +1418,7 @@ bool Read_nonBlocking() // tirei o startListening() daqui!!!!
     {
         if(!select)
         {
-            Serial.print("Message received: ");
+            // Serial.print("Message received: ");
             Serial.println(rcv);
         }
         return 1;
@@ -1556,50 +1456,64 @@ bool Write_nonBlocking(bool mode)
 		return 0;
 }
 
-void statusFeedback(unsigned long T1, unsigned long T2, char iteration)
+void statusFeedback(char iteration)
 {
     int OS = obstacleShape();
     char aux[15];
     radio.stopListening();
 
-    cmd[0] = '[';
-    cmd[1] = iteration;
-    cmd[2] = ']';
-    cmd[3] = '\0';
+    // Safety Button
+    if(rcv[0] != '\0')
+        concatenate(cmd,rcv);
+    else
+        concatenate(cmd,"x");
+
+    aux[0] = ' ';
+    aux[1] = '[';
+    aux[2] = iteration;
+    aux[3] = ']';
+    aux[4] = '\0';
+
+    concatenate(cmd,aux);
+
+    concatenate(cmd," ");
+    writeSensorsData();
+
     // Move
     if( (USS[0].mean < minDist)||(USS[0].mean < minDist)||(USS[2].mean < minDist)||(USS[3].mean < minDist)||(USS[4].mean < minDist) )
-        concatenate(cmd,"STP");
+        concatenate(cmd,"STP ");
     else
     {
         if(OS > 0)
             switch (T[OS])
             {
                 case (E_L):
-                    concatenate(cmd,"E_L");
+                    concatenate(cmd,"E_L ");
                     break;
                 case (E_M):
-                    concatenate(cmd,"E_M");
+                    concatenate(cmd,"E_M ");
                     break;
                 case (E_F):
-                    concatenate(cmd,"E_F");
+                    concatenate(cmd,"E_F ");
                     break;
                 case (D_L):
-                    concatenate(cmd,"D_L");
+                    concatenate(cmd,"D_L ");
                     break;
                 case (D_M):
-                    concatenate(cmd,"D_M");
+                    concatenate(cmd,"D_M ");
                     break;
                 case (D_F):
-                    concatenate(cmd,"D_F");
+                    concatenate(cmd,"D_F ");
                     break;
                 case (Frente):
-                    concatenate(cmd,"Fre");
+                    concatenate(cmd,"Fre ");
                     break;
             }
         else
-            concatenate(cmd,"OoR");
+            concatenate(cmd,"OoR ");
     }
 
+/*
     // Obstacle Shape
     if(OS >= 16)
     {
@@ -1655,18 +1569,8 @@ void statusFeedback(unsigned long T1, unsigned long T2, char iteration)
     }
     else
         concatenate(cmd,"0");
+*/
 
-    // Safety Button
-    concatenate(cmd," (");
-    if(rcv[0] != '\0')
-        concatenate(cmd,rcv);
-    else
-        concatenate(cmd,"E");
-    concatenate(cmd,") ");
-    // Time Functions
-    int2char(aux,T1);
-    concatenate(cmd,aux);
-    concatenate(cmd,"ms");
     Write_nonBlocking(select);
     radio.startListening();
 
@@ -1685,14 +1589,15 @@ void autonomous()
     radio.startListening();
     delay(1000);
 
-
-    unsigned long T1, T2;
-
     t = millis();
     while(millis() < t + t_start)
     {
+        ObstacleAvoid();
 
-        T2 = millis();
+        if (iteration == '9')
+            iteration = '0';
+        else 
+            iteration++;
 
         if(radio.available())
         {
@@ -1700,24 +1605,34 @@ void autonomous()
             while( (!done) && (millis() < t + t_start) ) // checa deadline por preciosismo...
                 done = radio.read( rcv, sizeof(rcv) );
         }
-
         if(rcv[0] == '-')
             break;
         if(rcv[0] == '+')
             t = millis();
-
-        statusFeedback(T1,T2,iteration);
-
-        ObstacleAvoid();
-
-        T1 = millis()-T2;
-
-        if (iteration == '9')
-            iteration = '0';
-        else 
-            iteration++;
+        statusFeedback(iteration);
     }
     stop();
+}
+
+void writeSensorsData()
+{
+    char aux[6];
+
+    int2char(aux,USS[4].mean);
+    concatenate(cmd,aux);
+    concatenate(cmd,"|");
+    int2char(aux,USS[3].mean);
+    concatenate(cmd,aux);
+    concatenate(cmd,"|");
+    int2char(aux,USS[2].mean);
+    concatenate(cmd,aux);
+    concatenate(cmd,"|");
+    int2char(aux,USS[1].mean);
+    concatenate(cmd,aux);
+    concatenate(cmd,"|");
+    int2char(aux,USS[0].mean);
+    concatenate(cmd,aux);
+    concatenate(cmd," ");
 }
 
 void SensorsDataPrint()
