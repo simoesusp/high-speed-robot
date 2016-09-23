@@ -22,7 +22,7 @@
 #include <PWM.h>
 
 /*=============================   DEFINES   ========================================== */
-#define Ncommands 12 // number of commands available
+#define Ncommands 13 // number of commands available
 // ------- radio pins ----------------------------
 #define CE_PIN   5
 #define CSN_PIN 6
@@ -39,14 +39,7 @@
 #define lowSpeed_l 120
 #define lowSpeed_r 100
 
-/*
-120 120: esquerda
-120 100: levemente direita
-120 110: esquerda
-150 150: levemente para a direita
-
-*/
-
+#define buffer_size 50
 
 // --------- deadlines (in millisseconds)----------------------------
 #define dt 1 // time increment for the deadlock handling routine
@@ -56,13 +49,13 @@
 #define t_start 1000 // deadline for loss of radio connection when running - autonomous() as well as start() -
 #define n_max 10 // number of attemptives to handle deadlock
 
-//TODO: pq medir além da regiao de atenção??
 #define time_out 30 // USS reading deadline <=> 6.8m (datasheet fala que só vai até 4m...)
 // maximum time (milliseconds) allowed to wait for the previous pulse in sensors echoPin to end
 
 // RADIO RELATED
 
 #define MaxPayload 32 // Maximum message size (32 bytes)
+#define intCmd_size 9
 // ---------- safety button pins -----------------
 #define ON  2// always high
 #define OFF 4 // always low 
@@ -81,7 +74,7 @@
 //TODO: nao esquecer de arrumar de novo!!!!
 #define minDist 150 // obstacle can't get any closer than minDist (in cm) from the robot
 #define warningDist 250 // minDist < obstacle distance < warningDist => warning zone!
-#define outOfRange 500
+#define outOfRange 400
 
 
 #define E_L 0 // turn softly to the left
@@ -96,6 +89,8 @@
 
 /*========================= GLOBAL VARIABLES ============================================================*/
 
+unsigned int **buffer;
+
 // -------- motor related variables -----------------
 /*int32_t*/ int frequency_r = 400;    // right motor pwm_value  = Motor Stopped   :  Pulse Width = 1ns
 /*int32_t*/ int frequency_l = 400;    // left motor frequency (in Hz)
@@ -106,6 +101,7 @@ bool left; // left motor on/off flag
 bool right; // right motor on/off flag
 bool speed; // if true, try to read pwm_value from remote control
 bool frequency;// if true, try to read frequency from remote control
+bool logging_flag;
 
 // -------- communication related variables -----------------
 const uint64_t pipes[2] = {0xDEDEDEDEE7LL, 0xDEDEDEDEE9LL}; // Define the transmit pipe (Obs.: "LL" => "LongLong" type)
@@ -135,12 +131,14 @@ bool safety_button;
 
 bool select = 1; // 0: master(remote control) ; 1: slave(robot) 
 
-int *T;                  // Truth Table
+short int *T;                  // Truth Table
 
 /*=======================================================================================================*/
 
 /*========================= FUNCTIONS  ============================================================*/
 void autonomous();
+void logging();
+void flushLogData(int);
 // -------- communication oriented functions -------
 void communication(bool mode);
 bool Read_nonBlocking();
@@ -178,7 +176,7 @@ void SensorsDataPrint();
 void SensorsDataSerialPrint();
 int obstacleShape();
 void speedControl(int);
-void initTable(int *T);
+void initTable(short int *);
 /*=======================================================================================================*/
 // int mypow(int , int );
 
@@ -233,11 +231,16 @@ void setup()
         pwmWrite(rightmotor, pwm_value_r);   // pwmWrite(pin, DUTY * 255 / 100);  
 
         // initialize command set
-        int i;
         intCmd = (char**)malloc(Ncommands*sizeof(char*));
-        for(i=0;i<Ncommands;i++)
-            intCmd[i] = (char*)malloc(MaxPayload*sizeof(char));
+        for(int i=0;i<Ncommands;i++)
+            intCmd[i] = (char*)malloc(intCmd_size*sizeof(char));
         setInternalCommands(intCmd);
+
+        buffer = (unsigned int**)malloc(buffer_size*sizeof(unsigned int*));
+        for(int i = 0; i < buffer_size; i++)
+            buffer[i] = (unsigned int*)malloc(5*sizeof(unsigned int));
+
+        logging_flag = LOW;
     }
     else // remote control
     {
@@ -249,7 +252,7 @@ void setup()
         digitalWrite(OFF, LOW);
     }
 
-    T = (int*)malloc(32*sizeof(int));
+    T = (short int*)malloc(32*sizeof(short int));
     initTable(T); // T: truth table
 }
 
@@ -541,7 +544,7 @@ motor da direita sem torque
 rodas sem aderência. Não usar X_F
 */
 
-void initTable(int *T)
+void initTable(short int *T)
 {
     T[B00000] = Frente; // doesnt happen!!!
     T[B00001] = E_L;  
@@ -1038,6 +1041,9 @@ void action(int n)
                 Write_nonBlocking(select);
                 autonomous();
                 break;
+            case 12: //	log
+                logging();
+                break;
         }
 }
 
@@ -1179,7 +1185,11 @@ bool processing()
 
 	if(i == Ncommands) // if not a command
     {
-        if(speed)
+        if(logging_flag)
+        {
+            flushLogData(char2int(rcv));
+        }
+        else if(speed)
         {
             int pwm = char2int(rcv);
             if(pwm > 0)
@@ -1286,6 +1296,31 @@ void read_message()
         while(Serial.available() > 0)
             msg[aux++] = Serial.read();
         msg[aux] = '\0';
+    }
+
+    if(rcv[0] == '{') // if log data, ask for the next
+    {
+        char aux[4];
+        
+        if(rcv[2] == '}')
+        {
+            aux[0] = rcv[1];
+            aux[1] = '\0';
+        }
+        if(rcv[3] == '}')
+        {
+            aux[0] = rcv[1];
+            aux[1] = rcv[2];
+            aux[2] = '\0';
+        }
+        if(rcv[4] == '}')
+        {
+            aux[0] = rcv[1];
+            aux[1] = rcv[2];
+            aux[2] = rcv[3];
+            aux[3] = '\0';
+        }
+        int2char(msg,char2int(aux)+1);
     }
 }
 
@@ -1446,10 +1481,11 @@ void setInternalCommands(char**m)
 	copyString("stop",m[5]);
 	copyString("sweep",m[6]);
 	copyString("status",m[7]);
-	copyString("frequency",m[8]);
-	copyString("safety button",m[9]);
-	copyString("distance",m[10]);
-	copyString("autonomous",m[11]);
+	copyString("freq",m[8]);
+	copyString("button",m[9]);
+	copyString("dist",m[10]);
+	copyString("auto",m[11]);
+	copyString("log",m[12]);
 
 }
 
@@ -1583,10 +1619,15 @@ bool Write_nonBlocking(bool mode)
         }
 	}
 
+    return check;
+
+/* stupidity:
+
 	if(check)
 		return 1;
 	else
 		return 0;
+*/
 }
 
 void statusFeedback(char iteration)
@@ -1747,6 +1788,57 @@ void autonomous()
     stop();
 }
 
+void logging()
+{
+    radio.stopListening();
+    for(int i = 0; i < buffer_size; i++)
+    {
+        ObstacleAvoid();
+        buffer[i][0] = USS[0].mean;
+        buffer[i][1] = USS[1].mean;
+        buffer[i][2] = USS[2].mean;
+        buffer[i][3] = USS[3].mean;
+        buffer[i][4] = USS[4].mean;
+    }
+
+    flushLogData(0);
+    logging_flag = HIGH;
+}
+
+void flushLogData(int N_buffer)
+{
+    if(N_buffer >= 0)
+    {
+        if(N_buffer < buffer_size)
+        {
+            char aux[5];
+            cmd[0] = '{'; // is it really necessary??
+            cmd[1] = '\0'; // is it really necessary??
+            int2char(aux,N_buffer);
+            concatenate(cmd,aux);
+            concatenate(cmd,"} ");
+            int2char(aux,buffer[N_buffer][4]);
+            concatenate(cmd,aux);
+            concatenate(cmd," | ");
+            int2char(aux,buffer[N_buffer][3]);
+            concatenate(cmd,aux);
+            concatenate(cmd," | ");
+            int2char(aux,buffer[N_buffer][2]);
+            concatenate(cmd,aux);
+            concatenate(cmd," | ");
+            int2char(aux,buffer[N_buffer][1]);
+            concatenate(cmd,aux);
+            concatenate(cmd," | ");
+            int2char(aux,buffer[N_buffer][0]);
+            concatenate(cmd,aux);
+        }
+        else
+        {
+            logging_flag = LOW;
+        }
+    }
+}
+
 void writeSensorsData()
 {
     char aux[6];
@@ -1821,3 +1913,5 @@ void SensorsDataPrint()
             iteration++;
     }
 }
+
+
