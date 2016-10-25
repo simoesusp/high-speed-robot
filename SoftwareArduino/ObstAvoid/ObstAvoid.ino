@@ -126,6 +126,7 @@ bool right; // right motor on/off flag
 bool speed; // if true, try to read pwm_value from remote control
 bool frequency;// if true, try to read frequency from remote control
 bool logging_flag;
+bool dyn = 1;
 
 // -------- communication related variables -----------------
 const uint64_t pipes[2] = {0xDEDEDEDEE7LL, 0xDEDEDEDEE9LL}; // Define the transmit pipe (Obs.: "LL" => "LongLong" type)
@@ -192,9 +193,8 @@ bool checkButton(); // check safety button status
 //--------- obstacle avoidance related functions ---
 void ObstacleAvoid();
 void SensorSettings();
-int myPulseIn();
+int myPulseIn(bool);
 int SensorReading();
-void measuring();
 void getExtreamValues();
 void SensorsDataPrint();
 void SensorsDataSerialPrint();
@@ -202,7 +202,7 @@ int obstacleShape();
 void speedControl(int);
 void initTable(short int *);
 /*=======================================================================================================*/
-// int mypow(int , int );
+ int mypow(int , int );
 
 void setup()
 {
@@ -321,27 +321,23 @@ void SensorSettings()
 {
     USS[0].Bit = digitalPinToBitMask(echoPin0);
     USS[0].port = digitalPinToPort(echoPin0);
-    USS[0].pointer = 0;
+    USS[0].pointer = -1;
 
     USS[1].Bit = digitalPinToBitMask(echoPin1);
     USS[1].port = digitalPinToPort(echoPin1);
-    USS[1].pointer = 0;
+    USS[1].pointer = -1;
 
     USS[2].Bit = digitalPinToBitMask(echoPin2);
     USS[2].port = digitalPinToPort(echoPin2);
-    USS[2].pointer = 0;
+    USS[2].pointer = -1;
 
     USS[3].Bit = digitalPinToBitMask(echoPin3);
     USS[3].port = digitalPinToPort(echoPin3);
-    USS[3].pointer = 0;
+    USS[3].pointer = -1;
 
     USS[4].Bit = digitalPinToBitMask(echoPin4);
     USS[4].port = digitalPinToPort(echoPin4);
-    USS[4].pointer = 0;
-
-    for(int i = 0; i < 5; i++)
-        for(int j = 0; j < 5; j++)
-            USS[i].distance[j] = 0;
+    USS[4].pointer = -1;
 }
 
 
@@ -350,7 +346,7 @@ void SensorSettings()
        pulse width measuring loop and achieve finer resolution.
        Calling digitalRead() instead yields much coarser resolution.
 */
-int myPulseIn()
+int myPulseIn( bool dynamical_reading)
 {
 /*TODO:
  * 1) check if it's possible to analyze all sensors at once:  *portInputRegister(USS[i].port)
@@ -394,12 +390,40 @@ int myPulseIn()
     USS[4].data_available = LOW;
     USS[4].duration = 0;
 
+    // adjusting pointer
+    if(USS[0].pointer == 4)
+        USS[0].pointer = 0;
+    else
+        USS[0].pointer = USS[0].pointer + 1;
+
+    if(USS[1].pointer == 4)
+        USS[1].pointer = 0;
+    else
+        USS[1].pointer = USS[1].pointer + 1;
+
+    if(USS[2].pointer == 4)
+        USS[2].pointer = 0;
+    else
+        USS[2].pointer = USS[2].pointer + 1;
+
+    if(USS[3].pointer == 4)
+        USS[3].pointer = 0;
+    else
+        USS[3].pointer = USS[3].pointer + 1;
+
+    if(USS[4].pointer == 4)
+        USS[4].pointer = 0;
+    else
+        USS[4].pointer = USS[4].pointer + 1;
+
+    // trigger
     digitalWrite(trigPin, LOW);
     delayMicroseconds(2);
     digitalWrite(trigPin, HIGH);
     delayMicroseconds(10);
     digitalWrite(trigPin, LOW);
 
+    // wait for echo
     while (!finished)
     {
         if (!(USS[0].data_available)) // if data hasn't already been read
@@ -412,6 +436,7 @@ int myPulseIn()
                     if ((*portInputRegister(USS[0].port) & USS[0].Bit) != USS[0].Bit)
                     {
                         USS[0].duration = micros() - USS[0].duration;
+                        USS[0].distance[USS[0].pointer] = USS[0].duration / 58.2;
                         USS[0].data_available = HIGH;
                     }
                 }
@@ -443,6 +468,7 @@ int myPulseIn()
                     if ((*portInputRegister(USS[1].port) & USS[1].Bit) != USS[1].Bit)
                     {
                         USS[1].duration = micros() - USS[1].duration;
+                        USS[1].distance[USS[1].pointer] = USS[1].duration / 58.2;
                         USS[1].data_available = HIGH;
                     }
                 }
@@ -474,6 +500,7 @@ int myPulseIn()
                     if ((*portInputRegister(USS[2].port) & USS[2].Bit) != USS[2].Bit)
                     {
                         USS[2].duration = micros() - USS[2].duration;
+                        USS[2].distance[USS[2].pointer] = USS[2].duration / 58.2;
                         USS[2].data_available = HIGH;
                     }
                 }
@@ -505,6 +532,7 @@ int myPulseIn()
                     if ((*portInputRegister(USS[3].port) & USS[3].Bit) != USS[3].Bit)
                     {
                         USS[3].duration = micros() - USS[3].duration;
+                        USS[3].distance[USS[3].pointer] = USS[3].duration / 58.2;
                         USS[3].data_available = HIGH;
                     }
                 }
@@ -536,6 +564,7 @@ int myPulseIn()
                     if ((*portInputRegister(USS[4].port) & USS[4].Bit) != USS[4].Bit)
                     {
                         USS[4].duration = micros() - USS[4].duration;
+                        USS[4].distance[USS[4].pointer] = USS[4].duration / 58.2;
                         USS[4].data_available = HIGH;
                     }
                 }
@@ -562,9 +591,26 @@ int myPulseIn()
         finished =  USS[0].data_available &  USS[1].data_available &  USS[2].data_available &  USS[3].data_available & USS[4].data_available;
     }
 
-    while(millis() < initTime + time_out) ; // TODO: wasted time, find out something useful to do here.
+    // if there is no echo, we assume there is nothing in front of us
+    if( !(USS[0].data_available) )
+        USS[0].distance[USS[0].pointer] = outOfRange;
 
-    return 1;
+    if( !(USS[1].data_available) )
+        USS[1].distance[USS[1].pointer] = outOfRange;
+
+    if( !(USS[2].data_available) )
+        USS[2].distance[USS[2].pointer] = outOfRange;
+
+    if( !(USS[3].data_available) )
+        USS[3].distance[USS[3].pointer] = outOfRange;
+
+    if( !(USS[4].data_available) )
+        USS[4].distance[USS[4].pointer] = outOfRange;
+
+    if(!dynamical_reading)
+        while(millis() < initTime + time_out) ; // TODO: wasted time, find out something useful to do here.
+
+    return 1; // TODO: return 0 instead of 1!!!
 }
 
 /*
@@ -819,73 +865,9 @@ void getExtreamValues()
     USS[4].mean = ( USS[4].mean - USS[4].farthest - USS[4].closest ) / 3;
 }
 
-void measuring()
-{
-    if( myPulseIn() )
-    {
-        USS[0].distance[USS[0].pointer] = USS[0].duration / 58.2;
-        USS[1].distance[USS[1].pointer] = USS[1].duration / 58.2;
-        USS[2].distance[USS[2].pointer] = USS[2].duration / 58.2;
-        USS[3].distance[USS[3].pointer] = USS[3].duration / 58.2;
-        USS[4].distance[USS[4].pointer] = USS[4].duration / 58.2;
-    }
-    else
-    {
-        if(USS[0].data_available)
-            USS[0].distance[USS[0].pointer] = USS[0].duration / 58.2;
-        else
-            USS[0].distance[USS[0].pointer] = outOfRange;
-
-        if(USS[1].data_available)
-            USS[1].distance[USS[1].pointer] = USS[1].duration / 58.2;
-        else
-            USS[1].distance[USS[1].pointer] = outOfRange;
-
-        if(USS[2].data_available)
-            USS[2].distance[USS[2].pointer] = USS[2].duration / 58.2;
-        else
-            USS[2].distance[USS[2].pointer] = outOfRange;
-
-        if(USS[3].data_available)
-            USS[3].distance[USS[3].pointer] = USS[3].duration / 58.2;
-        else
-            USS[3].distance[USS[3].pointer] = outOfRange;
-
-        if(USS[4].data_available)
-            USS[4].distance[USS[4].pointer] = USS[4].duration / 58.2;
-        else
-            USS[4].distance[USS[4].pointer] = outOfRange;
-    }
-
-    if(USS[0].pointer == 4)
-        USS[0].pointer = 0;
-    else
-        USS[0].pointer = USS[0].pointer + 1;
-
-    if(USS[1].pointer == 4)
-        USS[1].pointer = 0;
-    else
-        USS[1].pointer = USS[1].pointer + 1;
-
-    if(USS[2].pointer == 4)
-        USS[2].pointer = 0;
-    else
-        USS[2].pointer = USS[2].pointer + 1;
-
-    if(USS[3].pointer == 4)
-        USS[3].pointer = 0;
-    else
-        USS[3].pointer = USS[3].pointer + 1;
-
-    if(USS[4].pointer == 4)
-        USS[4].pointer = 0;
-    else
-        USS[4].pointer = USS[4].pointer + 1;
-}
-
 int SensorReading()
 {
-    measuring();
+    myPulseIn(dyn);
     getExtreamValues();
 
     if(USS[0].mean < minDist)
@@ -1324,6 +1306,13 @@ void read_message()
         while(Serial.available() > 0)
             msg[aux++] = Serial.read();
         msg[aux] = '\0';
+
+        if(aux != 0 && isSubstring("clear", msg) )
+        {
+            for(int i = 0; i < 50; i++)
+                Serial.println(" ");
+            msg[0] = '\0';
+        }
     }
 
     if(rcv[0] == '{') // if log data, ask for the next
@@ -1368,7 +1357,6 @@ void write_command(char *m)
 	copyString(m,cmd);
 }
 
-/*
 int mypow(int base, int exponent)
 {
     int result = 1;
@@ -1376,11 +1364,11 @@ int mypow(int base, int exponent)
         result = result*base;
     return result;
 }
-*/
 
 // TODO: make it generic
 int char2int(char *s)
 {
+/*
     int r = 0;
 
     if(s[1] == '\0')
@@ -1414,8 +1402,7 @@ int char2int(char *s)
     }
 
     return -2;
-
-/*
+*/
 
     int i = 0,j, r = 0, aux;
 
@@ -1437,8 +1424,7 @@ int char2int(char *s)
 
     for(j=0; j < i; j++)
     {
-        //if((s[j] >= '0') && (s[j] <= '9'))
-        if((s[j] > 47) && (s[j] < 57))
+        if((s[j] >= '0') && (s[j] <= '9'))
         {
             aux = (int) s[j];
             aux -= 48;
@@ -1454,7 +1440,6 @@ int char2int(char *s)
         }
     }
     return r;
-*/
 }
 
 void int2char(char *o,int n)
@@ -1497,7 +1482,6 @@ void concatenate(char *o, char *p)
 	}
 }
 
-
 void setInternalCommands(char**m)
 {
 
@@ -1514,7 +1498,6 @@ void setInternalCommands(char**m)
 	copyString("dist",m[10]);
 	copyString("auto",m[11]);
 	copyString("log",m[12]);
-
 }
 
 bool isSubstring(char *a, char *b)
@@ -1615,7 +1598,6 @@ bool Read_nonBlocking() // tirei o startListening() daqui!!!!
     {
         if(!select)
         {
-            // Serial.print("Message received: ");
             Serial.println(rcv);
         }
         return 1;
@@ -1648,14 +1630,6 @@ bool Write_nonBlocking(bool mode)
 	}
 
     return check;
-
-/* stupidity:
-
-	if(check)
-		return 1;
-	else
-		return 0;
-*/
 }
 
 void statusFeedback(char iteration)
@@ -1896,7 +1870,7 @@ void SensorsDataPrint()
 
     reading = 1;
     radio.startListening();
-    measuring();
+    myPulseIn(dyn);
     getExtreamValues();
 
 
@@ -1930,7 +1904,7 @@ void SensorsDataPrint()
         radio.stopListening();
         Write_nonBlocking(select);
         radio.startListening();
-        measuring();
+        myPulseIn(dyn);
         getExtreamValues();
         rcv[0] = '\0';
         aux[0] = '\0';
@@ -1941,5 +1915,3 @@ void SensorsDataPrint()
             iteration++;
     }
 }
-
-
