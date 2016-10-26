@@ -1,0 +1,221 @@
+\providecommand{\abntreprintinfo}[1]{%
+ \citeonline{#1}}
+\begin{thebibliography}{}
+\providecommand{\abntrefinfo}[3]{}
+\providecommand{\abntbstabout}[1]{}
+\abntbstabout{v-1.9.6 }
+
+\bibitem{brooks}
+\abntrefinfo{Brooks}{BROOKS}{1991}
+{BROOKS, R.~A. Intelligence without representation.
+\emph{Artificial intelligence}, Elsevier, v.~47, n.~1, p. 139--159, 1991.}
+
+\bibitem{murphy}
+\abntrefinfo{Murphy}{MURPHY}{2000}
+{MURPHY, R. \emph{Introduction to AI robotics}. [S.l.]: MIT press, 2000.}
+
+\bibitem{roseli}
+\abntrefinfo{ROMERO et al.}{ROMERO et al.}{2014}
+{ROMERO, R. A.~F. et al. \emph{Rob{\'o}tica M{\'o}vel}. [S.l.: s.n.], 2014.}
+
+\bibitem{mosa_proposal}
+\abntrefinfo{Pires et al.}{PIRES et al.}{2011}
+{PIRES, R. et al. Mosa-mission oriented sensor array: A proposal. In:
+  \emph{Proceedings of the XXXVII Conferencia Latinoamericana de
+  Inform{\'a}tica--CLEI}. [S.l.: s.n.], 2011. p. 1309--1318.}
+
+\bibitem{safety}
+\abntrefinfo{Storey}{STOREY}{1996}
+{STOREY, N.~R. \emph{Safety critical computer systems}. [S.l.]: Addison-Wesley
+  Longman Publishing Co., Inc., 1996.}
+
+\bibitem{hard}
+\abntrefinfo{Dillingham}{DILLINGHAM}{2008}
+{DILLINGHAM, G.~L. \emph{Unmanned Aircraft Systems: Federal Actions Needed to
+  Ensure Safety and Expand Their Potential Uses Within the National Airspace
+  System}. [S.l.]: DIANE Publishing, 2008.}
+
+\bibitem{motor_2}
+\abntrefinfo{Yedamale}{YEDAMALE}{2003}
+{YEDAMALE, P. \emph{AN885 - Brushless DC (BLDC) Motor Fundamentals}. 2003.
+Dispon{\'\i}vel em:
+  \url{http://ww1.microchip.com/downloads/en/AppNotes/00885a.pdf}. Acesso em:
+  12/10/2016.}
+
+\bibitem{motor_1}
+\abntrefinfo{Brown}{BROWN}{2002}
+{BROWN, W. \emph{AN857 - Brushless DC Motor Control Made Easy}. 2002.
+Dispon{\'\i}vel em:
+  \url{http://ww1.microchip.com/downloads/en/AppNotes/00857B.pdf}. Acesso em:
+  12/10/2016.}
+
+\bibitem{TOF_velocity}
+\abntrefinfo{Cotter}{COTTER}{1994}
+{COTTER, R.~J. Time-of-flight mass spectrometry. In:  \emph{Time-of-Flight Mass
+  Spectrometry}. [S.l.: s.n.], 1994.}
+
+\bibitem{TOF_medium1}
+\abntrefinfo{Axel, Shimakawa e MacFall}{AXEL; SHIMAKAWA; MACFALL}{1986}
+{AXEL, L.; SHIMAKAWA, B.~A.; MACFALL, J. A time-of-flight method of measuring
+  flow velocity by magnetic resonance imaging.
+\emph{Magnetic resonance imaging}, Elsevier, v.~4, n.~3, p. 199--205, 1986.}
+
+\bibitem{TOF_medium2}
+\abntrefinfo{Hayashi, Yoshino e Inuishi}{HAYASHI; YOSHINO; INUISHI}{1975}
+{HAYASHI, K.; YOSHINO, K.; INUISHI, Y. Carrier mobilities in insulating
+  polymers measured by time of flight method.
+\emph{Japanese Journal of Applied Physics}, IOP Publishing, v.~14, n.~1, p.~39,
+  1975.}
+
+\bibitem{siegwart}
+\abntrefinfo{Siegwart, Nourbakhsh e Scaramuzza}{SIEGWART; NOURBAKHSH;
+  SCARAMUZZA}{2011}
+{SIEGWART, R.; NOURBAKHSH, I.~R.; SCARAMUZZA, D. \emph{Introduction to
+  autonomous mobile robots}. [S.l.]: MIT press, 2011.}
+
+\bibitem{everett}
+\abntrefinfo{Everett}{EVERETT}{1995}
+{EVERETT, H. \emph{Sensors for mobile robots: theory and application}. [S.l.]:
+  AK Peters, Ltd., 1995.}
+
+\bibitem{balanis}
+\abntrefinfo{Balanis}{BALANIS}{2016}
+{BALANIS, C.~A. \emph{Antenna theory: analysis and design}. [S.l.]: John Wiley
+  \& Sons, 2016.}
+
+\bibitem{pozar}
+\abntrefinfo{Pozar}{POZAR}{2009}
+{POZAR, D.~M. \emph{Microwave engineering}. [S.l.]: John Wiley \& Sons, 2009.}
+
+\bibitem{HC-SR04}
+\abntrefinfo{ElecFreaks}{ELECFREAKS}{}
+{ELECFREAKS.
+Dispon{\'\i}vel em: \url{http://www.micropik.com/PDF/HCSR04.pdf}. Acesso em:
+  18/10/2016.}
+
+\bibitem{2016_artigo_1}
+\abntrefinfo{Borenstein e Koren}{BORENSTEIN; KOREN}{1995}
+{BORENSTEIN, J.; KOREN, Y. Error eliminating rapid ultrasonic firing for mobile
+  robot obstacle avoidance.
+\emph{IEEE Transactions on Robotics and automation}, IEEE, v.~11, n.~1, p.
+  132--138, 1995.}
+
+\bibitem{2016_artigo_5}
+\abntrefinfo{Shoval e Borenstein}{SHOVAL; BORENSTEIN}{2001}
+{SHOVAL, S.; BORENSTEIN, J. Using coded signals to benefit from ultrasonic
+  sensor crosstalk in mobile robot obstacle avoidance. In:  IEEE.
+  \emph{Robotics and Automation, 2001. Proceedings 2001 ICRA. IEEE
+  International Conference on}. [S.l.], 2001. v.~3, p. 2879--2884.}
+
+\bibitem{nRF}
+\abntrefinfo{Semiconductor}{SEMICONDUCTOR}{}
+{SEMICONDUCTOR, N. nrf24l01+ single chip 2.4 ghz transceiver product
+  specification v1. 0.
+\emph{nRF24L01+ datasheet}.
+Dispon{\'\i}vel em:
+  \url{http://www.nordicsemi.com/eng/Products/2.4GHz-RF/nRF24L01}. Acesso em:
+  05/10/2016.}
+
+\bibitem{MIFA}
+\abntrefinfo{Cypress Semiconductor Corporation}{CYPRESS SEMICONDUCTOR
+  CORPORATION}{2016}
+{CYPRESS SEMICONDUCTOR CORPORATION. \emph{AN91445 - Antenna Design and RF
+  Layout Guidelines}.
+[S.l.], 2016. Rev. D. Dispon{\'\i}vel em:
+  \url{http://www.cypress.com/documentation/application-notes/an91445-antenna-design-and-rf-layout-guidelines}.
+  Acesso em: 07/10/2016.}
+
+\bibitem{ATMega}
+\abntrefinfo{Atmel Corporation}{ATMEL CORPORATION}{}
+{ATMEL CORPORATION. \emph{ATMEL 8-BIT MICROCONTROLLER WITH 4/8/16/32KBYTES
+  IN-SYSTEM PROGRAMMABLE FLASH - DATASHEET}.
+[S.l.]. Dispon{\'\i}vel em:
+  \url{http://www.atmel.com/images/Atmel-8271-8-bit-AVR-Microcontroller-ATmega48A-48PA-88A-88PA-168A-168PA-328-328P\_datasheet\_Complete.pdf}.
+  Acesso em: 05/10/2016.}
+
+\bibitem{ArduSoft}
+\abntrefinfo{Arduino}{ARDUINO}{a}
+{ARDUINO.
+Dispon{\'\i}vel em: \url{https://github.com/arduino/Arduino}. Acesso em:
+  05/10/2016.}
+
+\bibitem{ArduInfo}
+\abntrefinfo{Arduino}{ARDUINO}{b}
+{ARDUINO.
+Dispon{\'\i}vel em: \url{http://www.arduino.org/products/boards/arduino-uno}.
+  Acesso em: 07/10/2016.}
+
+\bibitem{PL2303}
+\abntrefinfo{Prolific Technology Inc.}{PROLIFIC TECHNOLOGY INC.}{2005}
+{PROLIFIC TECHNOLOGY INC. \emph{PL-2303 Edition USB to Serial Bridge Controller
+  Product Datasheet}.
+[S.l.], 2005. Rev. 1.6. Dispon{\'\i}vel em:
+  \url{http://www.electronicaestudio.com/docs/PL2303.pdf}. Acesso em:
+  07/10/2016.}
+
+\bibitem{battery}
+\abntrefinfo{Baronti et al.}{BARONTI et al.}{2011}
+{BARONTI, F. et al. Hierarchical platform for monitoring, managing and charge
+  balancing of lipo batteries. In:  IEEE. \emph{2011 IEEE Vehicle Power and
+  Propulsion Conference}. [S.l.], 2011. p.~1--6.}
+
+\bibitem{bateria}
+\abntrefinfo{Team}{TEAM}{2008}
+{TEAM, M. \emph{A Guide to Understanding Battery Specifications}. [S.l.]:
+  December, 2008.}
+
+\bibitem{jones}
+\abntrefinfo{Jones e Flynn}{JONES; FLYNN}{1993}
+{JONES, J.~L.; FLYNN, A.~M. \emph{Mobile robots: inspiration to
+  implementation}. [S.l.]: AK Peters, Ltd., 1993.}
+
+\bibitem{pwm_lib}
+\abntrefinfo{ManiacBug}{MANIACBUG}{a}
+{MANIACBUG.
+Dispon{\'\i}vel em:
+  \url{https://github.com/kmark/Captain/tree/master/CaptainShip/PWM}. Acesso
+  em: 17/10/2016.}
+
+\bibitem{nrf_lib}
+\abntrefinfo{ManiacBug}{MANIACBUG}{b}
+{MANIACBUG.
+Dispon{\'\i}vel em: \url{https://github.com/maniacbug/RF24}. Acesso em:
+  16/10/2016.}
+
+\bibitem{RF24_class_doc}
+\abntrefinfo{ManiacBug}{MANIACBUG}{c}
+{MANIACBUG.
+Dispon{\'\i}vel em: \url{https://github.com/maniacbug/RF24}. Acesso em:
+  19/10/2016.}
+
+\bibitem{Artigo_3}
+\abntrefinfo{Gageik, M{\"u}ller e Montenegro}{GAGEIK; M{\"U}LLER;
+  MONTENEGRO}{2012}
+{GAGEIK, N.; M{\"U}LLER, T.; MONTENEGRO, S. Obstacle detection and collision
+  avoidance using ultrasonic distance sensors for an autonomous quadrocopter.
+\emph{University Of W{\"u}rzburg, Aerospace Information Technology (Germany),
+  W{\"u}rzburg September}, 2012.}
+
+\bibitem{Artigo_1}
+\abntrefinfo{Dongyue, Yuanhang e Yuting}{DONGYUE; YUANHANG; YUTING}{2013}
+{DONGYUE, Q.; YUANHANG, H.; YUTING, Z. The investigation of the obstacle
+  avoidance for mobile robot based on the multi sensor information fusion
+  technology.
+\emph{Int. J. Mat. Mech. Manuf}, v.~1, p. 366--370, 2013.}
+
+\bibitem{silberschatz}
+\abntrefinfo{Silberschatz et al.}{SILBERSCHATZ et al.}{1998}
+{SILBERSCHATZ, A. et al. \emph{Operating system concepts}. [S.l.]:
+  Addison-Wesley Reading, 1998. v.~4.}
+
+\bibitem{stigge}
+\abntrefinfo{Stigge et al.}{STIGGE et al.}{2006}
+{STIGGE, M. et al. Reversing crc--theory and practice.
+Citeseer, 2006.}
+
+\bibitem{peterson}
+\abntrefinfo{Peterson e Brown}{PETERSON; BROWN}{1961}
+{PETERSON, W.~W.; BROWN, D.~T. Cyclic codes for error detection.
+\emph{Proceedings of the IRE}, v.~49, n.~1, p. 228--235, 1961.}
+
+\end{thebibliography}

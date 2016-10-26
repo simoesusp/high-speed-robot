@@ -1,0 +1,80 @@
+\changetocdepth {4}
+\select@language {brazil}
+\setlength {\cftchapterindent }{\cftlastnumwidth } \setlength {\cftchapternumwidth }{2em}
+\setlength {\cftchapterindent }{\cftlastnumwidth } \setlength {\cftchapternumwidth }{2em}
+\setlength {\cftchapterindent }{\cftlastnumwidth } \setlength {\cftchapternumwidth }{2em}
+\setlength {\cftchapterindent }{\cftlastnumwidth } \setlength {\cftchapternumwidth }{2em}
+\setlength {\cftchapterindent }{\cftlastnumwidth } \setlength {\cftchapternumwidth }{2em}
+\setlength {\cftchapterindent }{\cftlastnumwidth } \setlength {\cftchapternumwidth }{2em}
+\setlength {\cftchapterindent }{0em} \setlength {\cftchapternumwidth }{\cftlastnumwidth }
+\contentsline {chapter}{\chapternumberline {1}\MakeTextUppercase {Introdu\IeC {\c c}\IeC {\~a}o}}{21}{chapter.1}
+\setlength {\cftchapterindent }{0em} \setlength {\cftchapternumwidth }{\cftlastnumwidth }
+\contentsline {chapter}{\chapternumberline {2}\MakeTextUppercase {Embasamento Te\IeC {\'o}rico}}{23}{chapter.2}
+\contentsline {section}{\numberline {2.1}Arquitetura Reativa}{23}{section.2.1}
+\contentsline {section}{\numberline {2.2}Arquitetura MOSA}{24}{section.2.2}
+\setlength {\cftchapterindent }{0em} \setlength {\cftchapternumwidth }{\cftlastnumwidth }
+\contentsline {chapter}{\chapternumberline {3}\MakeTextUppercase {Materiais}}{25}{chapter.3}
+\contentsline {section}{\numberline {3.1}Motor \textit {Brushless}}{25}{section.3.1}
+\contentsline {section}{\numberline {3.2}ESC}{26}{section.3.2}
+\contentsline {section}{\numberline {3.3}Sensor Ultrass\IeC {\^o}nico}{26}{section.3.3}
+\contentsline {subsection}{\numberline {3.3.1}Princ\IeC {\'\i }pio de Funcionamento}{26}{subsection.3.3.1}
+\contentsline {subsection}{\numberline {3.3.2}Limita\IeC {\c c}\IeC {\~o}es}{27}{subsection.3.3.2}
+\contentsline {subsubsection}{\numberline {3.3.2.1}Varia\IeC {\c c}\IeC {\~a}o na velocidade de propaga\IeC {\c c}\IeC {\~a}o da onda ac\IeC {\'u}stica}{27}{subsubsection.3.3.2.1}
+\contentsline {subsubsection}{\numberline {3.3.2.2}Direcionalidade}{27}{subsubsection.3.3.2.2}
+\contentsline {subsubsection}{\numberline {3.3.2.3}Resposta no Ambiente Alvo}{27}{subsubsection.3.3.2.3}
+\contentsline {subsubsection}{\numberline {3.3.2.4}\textit {Foreshortening}}{28}{subsubsection.3.3.2.4}
+\contentsline {subsubsection}{\numberline {3.3.2.5}Reflex\IeC {\~a}o especular}{28}{subsubsection.3.3.2.5}
+\contentsline {subsubsection}{\numberline {3.3.2.6}\textit {Crosstalk}}{28}{subsubsection.3.3.2.6}
+\contentsline {subsubsection}{\numberline {3.3.2.7}Tempo de Resposta}{28}{subsubsection.3.3.2.7}
+\contentsline {section}{\numberline {3.4}M\IeC {\'o}dulo de r\IeC {\'a}dio frequ\IeC {\^e}ncia}{28}{section.3.4}
+\contentsline {section}{\numberline {3.5}Arduino}{29}{section.3.5}
+\contentsline {subsection}{\numberline {3.5.1}Arduino Uno}{29}{subsection.3.5.1}
+\contentsline {subsection}{\numberline {3.5.2}Arduino Pro Mini}{30}{subsection.3.5.2}
+\contentsline {section}{\numberline {3.6}Bateria}{30}{section.3.6}
+\contentsline {subsection}{\numberline {3.6.1}\textit {C rate}}{30}{subsection.3.6.1}
+\setlength {\cftchapterindent }{0em} \setlength {\cftchapternumwidth }{\cftlastnumwidth }
+\contentsline {chapter}{\chapternumberline {4}\MakeTextUppercase {M\IeC {\'e}todo}}{31}{chapter.4}
+\contentsline {section}{\numberline {4.1}Estrat\IeC {\'e}gia \textit {bottom-up}}{31}{section.4.1}
+\contentsline {section}{\numberline {4.2}Arquitetura Reativa}{31}{section.4.2}
+\contentsline {section}{\numberline {4.3}Subsistema de Locomo\IeC {\c c}\IeC {\~a}o}{31}{section.4.3}
+\contentsline {section}{\numberline {4.4}Subsistema de Percep\IeC {\c c}\IeC {\~a}o}{32}{section.4.4}
+\contentsline {section}{\numberline {4.5}Subsistema de Comunica\IeC {\c c}\IeC {\~a}o}{32}{section.4.5}
+\contentsline {section}{\numberline {4.6}Subsistema de Navega\IeC {\c c}\IeC {\~a}o}{34}{section.4.6}
+\contentsline {section}{\numberline {4.7}Integra\IeC {\c c}\IeC {\~a}o dos Subsistemas}{34}{section.4.7}
+\setlength {\cftchapterindent }{0em} \setlength {\cftchapternumwidth }{\cftlastnumwidth }
+\contentsline {chapter}{\chapternumberline {5}\MakeTextUppercase {Resultados}}{35}{chapter.5}
+\contentsline {section}{\numberline {5.1}USS}{35}{section.5.1}
+\setlength {\cftchapterindent }{0em} \setlength {\cftchapternumwidth }{\cftlastnumwidth }
+\contentsline {chapter}{\chapternumberline {6}\MakeTextUppercase {Conclus\IeC {\~a}o}}{37}{chapter.6}
+\vspace {\cftbeforechapterskip }
+\setlength {\cftchapterindent }{\cftlastnumwidth } \setlength {\cftchapternumwidth }{2em}
+\contentsline {chapter}{\uppercase {Refer\^encias}}{39}{section*.14}
+\renewcommand *{\cftappendixname }{AP\^ENDICE \space }
+\setlength {\cftpartindent }{\cftlastnumwidth } \setlength {\cftpartnumwidth }{2em}
+\cftinsert {A}
+\contentsline {part}{\uppercase {Ap\^endices}}{41}{section*.15}
+\setlength {\cftchapterindent }{0em} \setlength {\cftchapternumwidth }{\cftlastnumwidth }
+\setlength {\cftchapterindent }{\cftlastnumwidth } \setlength {\cftchapternumwidth }{2em}
+\cftinsert {A}
+\contentsline {appendix}{\chapternumberline {A}\MakeTextUppercase {Ap\IeC {\^e}ndices}}{43}{appendix.A}
+\contentsline {section}{\numberline {A.1}Sistemas de Tempo Real}{43}{section.A.1}
+\contentsline {section}{\numberline {A.2}PWM}{43}{section.A.2}
+\contentsline {section}{\numberline {A.3}GFSK}{43}{section.A.3}
+\contentsline {section}{\numberline {A.4}banda ISM}{43}{section.A.4}
+\contentsline {section}{\numberline {A.5}SPI}{43}{section.A.5}
+\contentsline {section}{\numberline {A.6}CRC}{43}{section.A.6}
+\contentsline {section}{\numberline {A.7}MIFA}{44}{section.A.7}
+\contentsline {section}{\numberline {A.8}efeito hall}{44}{section.A.8}
+\contentsline {section}{\numberline {A.9}campo girante}{44}{section.A.9}
+\contentsline {section}{\numberline {A.10}\textit {schmitt trigger}}{44}{section.A.10}
+\contentsline {section}{\numberline {A.11}Diagrama da Classe RF24}{44}{section.A.11}
+\contentsline {section}{\numberline {A.12}Estrutura Anal\IeC {\'\i }tica do Projeto}{44}{section.A.12}
+\contentsline {section}{\numberline {A.13}Esquem\IeC {\'a}tico do Rob\IeC {\^o}}{44}{section.A.13}
+\contentsline {section}{\numberline {A.14}Tabela}{44}{section.A.14}
+\contentsline {section}{\numberline {A.15}Fluxograma da Rotina de Desvio de Obst\IeC {\'a}culos}{45}{section.A.15}
+\cftinsert {AAA}
+\renewcommand *{\cftappendixname }{ANEXO \space }
+\setlength {\cftchapterindent }{0em} \setlength {\cftchapternumwidth }{\cftlastnumwidth }
+\setlength {\cftchapterindent }{\cftlastnumwidth } \setlength {\cftchapternumwidth }{2em}
+\cftinsert {A}
+\contentsline {appendix}{\chapternumberline {A}\MakeTextUppercase {Anexos}}{49}{appendix.anexochapback.1}

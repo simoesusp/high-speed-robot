@@ -1,0 +1,9 @@
+\chapter{Resultados}
+
+\section{USS}
+
+\cite{jones}(página 149) vibração residual do trigger pode causar falsas leituras no echo, talvez esse seja o problema no caso de detecções dinâmicas 
+deixado de lado.
+
+\cite{siegwart} (páginas 126-127) talvez estendendo o \textit{blanking time} consigamos manter as detecções dinâmicas, i.e. mexer diretamente no 
+myPulsein() para garantir medidas abaixo de 5 cm sejam processadas, trabalhando nos IFs. 
