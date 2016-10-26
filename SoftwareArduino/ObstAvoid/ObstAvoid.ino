@@ -65,24 +65,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define buffer_size 50
 
 // --------- deadlines (in millisseconds)----------------------------
-#define dt 1 // time increment for the deadlock handling routine
-#define t_min 1
 #define t_max 100 
-#define t_com 500 // deadline for performing communication (snd & rcv)
 #define t_start 1000 // deadline for loss of radio connection when running - autonomous() as well as start() -
-#define n_max 10 // number of attemptives to handle deadlock
-
 #define time_out 30 // USS reading deadline <=> 6.8m (datasheet fala que só vai até 4m...)
-// maximum time (milliseconds) allowed to wait for the previous pulse in sensors echoPin to end
 
 // RADIO RELATED
 
-#define MaxPayload 5 // Maximum message size (32 bytes)
+#define MaxPayload 24 // Maximum message size (32 bytes)
 #define intCmd_size 9
 // ---------- safety button pins -----------------
-#define ON  2// always high
-#define OFF 4 // always low 
-#define state 3 // says if in trouble or safe!
+#define ON  9// always high
+#define state 8 // says if in trouble or safe!
+#define OFF 7 // always low 
 
 // ----------- USS Pins --------------------------
               // Obs.: non PWM digital pins were chosen to be sensor pins.
@@ -115,6 +109,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 unsigned int **buffer;
 
 // -------- motor related variables -----------------
+//TODO: maybe we could use uint8_t to save space
 /*int32_t*/ int frequency_r = 400;    // right motor pwm_value  = Motor Stopped   :  Pulse Width = 1ns
 /*int32_t*/ int frequency_l = 400;    // left motor frequency (in Hz)
 /*uint8_t*/ int pwm_value_r = 330;    // right motor  pwm_value  = Motor Stopped   :  Pulse Width = 1ns
@@ -125,15 +120,15 @@ bool right; // right motor on/off flag
 bool speed; // if true, try to read pwm_value from remote control
 bool frequency;// if true, try to read frequency from remote control
 bool logging_flag;
-bool dyn = 1;
+bool dyn = 1; // dynamical/fixed USS echo reading
 
 // -------- communication related variables -----------------
 const uint64_t pipe = 0xDEDEDEDEE7LL; // Define the transmit pipe (Obs.: "LL" => "LongLong" type)
 RF24 radio(CE_PIN, CSN_PIN); // Create a Radio Object
 char rcv[MaxPayload]; // message received
-char cmd[MaxPayload]; // used by the robot
+char cmd[MaxPayload]; // message transmitted
+char copy[MaxPayload]; // used by the remote controller
 char **intCmd; // internal commands
-long randNumber; // used by deadlock handling function
 unsigned long t;
 //--------- UltraSonic Sensor type --------------------------
 struct sensor_t
@@ -149,9 +144,9 @@ struct sensor_t
     short int pointer; // points to most recent data in circular vector distance.
 } USS[5]; 
 
-bool safety_button;
+bool safety_button; // robot: button status 
 
-    bool select = 1; // 0: master(remote control) ; 1: slave(robot) 
+    bool select = 0; // 0: master(remote control) ; 1: slave(robot) 
 
 short int *T;                  // Truth Table
 
@@ -164,25 +159,22 @@ void flushLogData(int);
 // -------- communication oriented functions -------
 void communication();
 bool read_nonBlocking();
-// bool Read_blocking();
 bool write_nonBlocking();
-// bool Write_blocking(bool);
-// void deadlockHandling(unsigned int);
 void statusFeedback(char);
 void writeSensorsData();
 
 //---------- string handling functions -------------
-void concatenate(char *, char *);
+void append(char *, char *);
 void copyString(char *, char *);
 bool isSubstring(char *, char *);
-void write_command(char*);
+void write_ackPayload(char*);
 int char2int(char*);
 void int2char(char *o,int n);
 
 void set_msg(); // transmits Serial.read() or safety button status - remote controller
 void setInternalCommands(char**); // robot commands
 bool processing(); // processes robot received data
-void action(int); // perform command
+void action(int); // perform received command - robot
 void status(); // selected motor(s), pwm modulation rates and frequencies
 void start(); // turn selected motors on
 bool checkButton(); // check safety button status
@@ -258,8 +250,10 @@ void setup()
             buffer[i] = (unsigned int*)malloc(5*sizeof(unsigned int));
 
         logging_flag = LOW;
+        T = (short int*)malloc(32*sizeof(short int));
+        initTable(T); // T: truth table
     }
-    else // remote control
+    else // remote controller
     {
         radio.openWritingPipe(pipe);
         pinMode(ON, OUTPUT);
@@ -268,14 +262,16 @@ void setup()
 
         digitalWrite(ON, HIGH);
         digitalWrite(OFF, LOW);
+
+        copy[0] = '\0'; // TODO: is it really necessary???
     }
 
-    T = (short int*)malloc(32*sizeof(short int));
-    initTable(T); // T: truth table
 
     // to avoid first mean values to be absurd take a few samples from the environment before running
     for(int i = 0; i < 10; i++)
         SensorReading();
+
+    t = millis();
 }
 
 void loop()
@@ -919,39 +915,42 @@ void status()
 
 	status[0] = 48+left;
 	status[1] = 'L';
-	status[2] = 48+right;
-	status[3] = 'R';
+	status[2] = 48+frequency;
+	status[3] = 'F';
 	status[4] = 48+speed;
 	status[5] = 'S';
-	status[6] = 48+frequency;
-	status[7] = 'f';
-	status[8] = '|';
+	status[6] =  48+right;
+	status[7] =  'R';
+	status[8] = ':';
 	status[9] = '\0';
 
 	int2char(aux,frequency_l);
-	concatenate(status,aux);
-	concatenate(status,"fL");
+	append(status,aux);
+	append(status,"F");
 
 	int2char(aux,pwm_value_l);
-	concatenate(status,aux);
-	concatenate(status,"SL");
+	append(status,aux);
+	append(status,"S|");
 
 	int2char(aux,frequency_r);
-	concatenate(status,aux);
-	concatenate(status,"fR");
+	append(status,aux);
+	append(status,"f");
 
 	int2char(aux,pwm_value_r);
-	concatenate(status,aux);
-	concatenate(status,"SR");
+	append(status,aux);
+	append(status,"S");
 
-	write_command(status);
+	write_ackPayload(status);
 
 }
 
 void communication()
 {
     if(select) // robot
-        read_nonBlocking();
+    {
+        if(!read_nonBlocking()) // if there is a message for us
+            processing();
+    }
     else // remote controller
         write_nonBlocking();
 }
@@ -966,35 +965,35 @@ void action(int n)
             case 0: //	   left
                 left = 1;
                 right = 0;
-                write_command("left motor!");
+                write_ackPayload("left motor!");
                 break;
 
             case 1: //	   right
                 left = 0;
                 right = 1;
-                write_command("right motor!");
+                write_ackPayload("right motor!");
                 break;
 
             case 2: //	   both
                 left = 1;
                 right = 1;
-                write_command("both motors!");
+                write_ackPayload("both motors!");
                 break;
 
             case 3: //	   speed
                 speed = 1;
                 frequency = 0;
-                write_command("enter speed value.");
+                write_ackPayload("enter speed value.");
                 break;
 
             case 4: //	   start
-                write_command("here we go!");
+                write_ackPayload("here we go!");
                 start();
                 break;
 
             case 5: //	   stop
                 stop();
-                write_command("stop!!!");
+                write_ackPayload("stop!!!");
                 break;
 
             case 6: //	   sweep
@@ -1008,19 +1007,19 @@ void action(int n)
             case 8: //	 frequency 
                 speed = 0;
                 frequency = 1;
-                write_command("enter frequency value.");
+                write_ackPayload("enter frequency value.");
                 break;
             case 9: //	 safety button status 
                 if(safety_button)
-                    write_command("ON");
+                    write_ackPayload("ON");
                 else
-                    write_command("OFF");
+                    write_ackPayload("OFF");
                 break;
             case 10: // print USS data  
                 SensorsDataPrint();
                 break;
             case 11: //	obstacle avoidance 
-                write_command("autonomous navigation");
+                write_ackPayload("autonomous navigation");
                 autonomous();
                 break;
             case 12: //	log
@@ -1158,75 +1157,83 @@ void start()
 bool processing()
 {
 	int i;
-	for(i = 0; i < Ncommands; i++) // have we just got a command?
+	for(i = 0; i < Ncommands; i++) // search for a known command
 		if(isSubstring(intCmd[i],rcv) == 1)
 			break;
 
-	if(i == Ncommands) // if not a command
+	if(i < Ncommands) // have we just got a command?
+		action(i); // yes, perform i-th command 
+	else // not a command, maybe it is data
     {
-        if(logging_flag)
+        int number = char2int(rcv);
+
+        if( number > 0 ) 
         {
-            flushLogData(char2int(rcv));
-        }
-        else if(speed)
-        {
-            int pwm = char2int(rcv);
-            if(pwm > 0)
+            if(logging_flag) // log data?
+            {
+                flushLogData(char2int(rcv));
+            }
+            else if(speed)
             {
                 if(left)
                 {
-                    pwm_value_l = pwm;
+                    pwm_value_l = number;
                     speed = 0;
                     if(right)
-                        concatenate(rcv," (both pwm)");
+                        append(rcv," (both pwm)");
                     else
-                        concatenate(rcv," (left pwm)");
-                    write_command(rcv);
+                        append(rcv," (left pwm)");
+                    write_ackPayload(rcv);
                 }
                 if(right)
                 {
-                    pwm_value_r = pwm;
+                    pwm_value_r = number;
                     speed = 0;
                     if(!left)
                     {
-                        concatenate(rcv," (right pwm)");
-                        write_command(rcv);
+                        append(rcv," (right pwm)");
+                        write_ackPayload(rcv);
                     }
                 }
+
+                if( !(right || left) )
+                    write_ackPayload("set for which motor?");
+
             }
-        }
-        else if(frequency)
-        {
-            int f = char2int(rcv);
-            if(f > 0) 
+            else if(frequency)
             {
                 if(left)
                 {
-                    frequency_l = f;
+                    frequency_l = number;
                     frequency = 0;
                     SetPinFrequencySafe(leftmotor, frequency_l);
                     if(right)
-                        concatenate(rcv," (freq L and R)");
+                        append(rcv," (freq L and R)");
                     else
-                        concatenate(rcv," (freq L)");
-                    write_command(rcv);
+                        append(rcv," (freq L)");
+                    write_ackPayload(rcv);
                 }
 
                 if(right)
                 {
-                    frequency_r = f;
+                    frequency_r = number;
                     frequency = 0;
                     SetPinFrequencySafe(rightmotor, frequency_r);
                     if(!left)
                     {
-                        concatenate(rcv," (freq R)");
-                        write_command(rcv);
+                        append(rcv," (freq R)");
+                        write_ackPayload(rcv);
                     }
                 }
+                if( !(right || left) )
+                    write_ackPayload("set for which motor?");
             }
+            else // what is this number for?
+                write_ackPayload(rcv); // send it back!
         }
-        else if( (  (rcv[0]=='+' || rcv[0]=='-')  && (rcv[1]=='\0')  )  )  // safety button status message
+        else if( (  (rcv[0]=='+' || rcv[0]=='-')  && (rcv[1]=='\0')  )  )  // have we received safety button status?
         {	
+            radio.writeAckPayload( 1, cmd, sizeof(cmd) ); // resend previous message to remote controller, maybe the last one got lost...
             if(rcv[0] == '+')
                 safety_button = 1;
             else
@@ -1235,15 +1242,11 @@ bool processing()
                 return 1;
             }
         }
-        else // nothing recognizable send it back
+        else // nothing recognizable, send it back
         {	
-            write_command(rcv);
+            write_ackPayload(rcv);
         }
     }
-	else // perform command i
-	{
-		action(i);
-	}
 
     return 0;
 }
@@ -1266,11 +1269,15 @@ bool checkButton()
 
 void set_msg()
 {
-    if(Serial.available() == 0 && cmd[0] == '\0')
-        checkButton();
-    else
+    // if(Serial.available() == 0 && cmd[0] == '\0')
+    if(millis() > t + t_max )
     {
-        delay(100);
+        checkButton();
+        t = millis();
+    }
+    else if( Serial.available() )
+    {
+        delay(1);
         int aux = 0;
         while(Serial.available() > 0)
             cmd[aux++] = Serial.read();
@@ -1283,8 +1290,7 @@ void set_msg()
             cmd[0] = '\0';
         }
     }
-
-    if(rcv[0] == '{') // if log data, ask for the next
+    else if(rcv[0] == '{') // if log data, ask for the next
     {
         char aux[4];
         
@@ -1306,7 +1312,9 @@ void set_msg()
             aux[2] = rcv[3];
             aux[3] = '\0';
         }
-        int2char(cmd,char2int(aux)+1);
+        int number = char2int(aux)+1;
+        if(number < buffer_size)
+            int2char(cmd,number);
     }
 }
 
@@ -1321,10 +1329,13 @@ void copyString(char *o, char *c)
     }
 }
 
-void write_command(char *m)
+void write_ackPayload(char *m)
 {
-	copyString(m,cmd);
-    radio.writeAckPayload( 1, cmd, sizeof(cmd) );
+    if( m[0] != '\0' )
+    {
+        copyString(m,cmd);
+        radio.writeAckPayload( 1, cmd, sizeof(cmd) );
+    }
 }
 
 int mypow(int base, int exponent)
@@ -1338,76 +1349,68 @@ int mypow(int base, int exponent)
 // TODO: make it generic
 int char2int(char *s)
 {
-/*
-    int r = 0;
 
-    if(s[1] == '\0')
-    {
-        if(s[0] >= '0' && s[0] <= '9')
-        {
-            r = (s[0] - 48);
-            return r;
-        }
-        return -1;
-    }
+    /*
+       int r = 0;
 
-    if(s[2] == '\0')
-    {
-        if(s[0] >= '0' && s[0] <= '9' && s[1] >= '0' && s[1] <= '9')
-        {
-            r = (s[1] - 48) + (s[0] - 48)*10;
-            return r;
-        }
-        return -1;
-    }
+       if(s[1] == '\0')
+       {
+       if(s[0] >= '0' && s[0] <= '9')
+       {
+       r = (s[0] - 48);
+       return r;
+       }
+       return -1;
+       }
 
-    if(s[3] == '\0')
-    {
-        if(s[0] >= '0' && s[0] <= '9' && s[1] >= '0' && s[1] <= '9' && s[2] >= '0' && s[2] <= '9')
-        {
-            r = (s[2] - 48) + (s[1] - 48)*10 + (s[0] - 48)*100 ;
-            return r;
-        }
-        return -1;
-    }
+       if(s[2] == '\0')
+       {
+       if(s[0] >= '0' && s[0] <= '9' && s[1] >= '0' && s[1] <= '9')
+       {
+       r = (s[1] - 48) + (s[0] - 48)*10;
+       return r;
+       }
+       return -1;
+       }
 
-    return -2;
-*/
+       if(s[3] == '\0')
+       {
+       if(s[0] >= '0' && s[0] <= '9' && s[1] >= '0' && s[1] <= '9' && s[2] >= '0' && s[2] <= '9')
+       {
+       r = (s[2] - 48) + (s[1] - 48)*10 + (s[0] - 48)*100 ;
+       return r;
+       }
+       return -1;
+       }
+
+       return -2;
+     */
 
     int i = 0,j, r = 0, aux;
 
     for(i = 0; i < MaxPayload; i++)
-        if(s[i] == '\0')
-            break;
-
-    if(i == MaxPayload)
     {
-        write_command("-3"); // number too big for this application
+        if( !((s[i] >= '0') && (s[i] <= '9')) ) // is it a number?
+        {
+            if(s[i] == '\0')
+                break;
+            else
+                return -1;
+        }
+    }
+
+    if(i == MaxPayload) // number too big for this application
         return -3;
-    }
 
-    if(i == 0)
-    {
-        write_command("-2"); // empty string
+    if(i == 0) // empty string
         return -2;
-    }
 
     for(j=0; j < i; j++)
     {
-        if((s[j] >= '0') && (s[j] <= '9'))
-        {
-            aux = (int) s[j];
-            aux -= 48;
-            aux *= (int) mypow(10,i-1-j);
-            r += aux;
-        }
-        else
-        {
-            int2char(s,i);
-            concatenate(s,":error!");
-            write_command(s);
-            return -1;
-        }
+        aux = (int) s[j];
+        aux -= 48;
+        aux *= (int) mypow(10,i-1-j);
+        r += aux;
     }
     return r;
 }
@@ -1433,7 +1436,7 @@ void int2char(char *o,int n)
 		o[0] = '\0';
 }
 
-void concatenate(char *o, char *p)
+void append(char *o, char *p)
 {
 	int i,j,k;
 	for(i = 0; i < MaxPayload; i++)
@@ -1476,8 +1479,6 @@ bool isSubstring(char *a, char *b)
 
 	if((a[0] == '\0')||(b[0] == '\0'))
 	{
-        if(!select)
-            Serial.println("Empty string.");
 		return 0;
 	}	
 
@@ -1496,69 +1497,6 @@ bool isSubstring(char *a, char *b)
 	return 1;
 }
 
-/*
-bool Read_blocking()
-{
-	radio.startListening();
-	delay(1);
-	bool r = read_nonBlocking();
-	unsigned int n = 0;
-	t = millis();
-
-	while(!r)
-	{
-		if(millis() > t+dt)
-			deadlockHandling(n++);
-
-		if(!reading)
-			return 0;
-		r = read_nonBlocking();
-	}
-	return 1;
-}
-
-bool Write_blocking(bool mode) // mode 0: user written command; mode 1: std_command
-{
-    radio.stopListening();
-    delay(1);
-    bool w;
-    unsigned int n = 0;
-
-    if(!mode)
-        set_msg();
-    w = write_nonBlocking(mode);
-    t = millis();
-    while(!w)
-    {
-        if(millis() > t+dt)
-            deadlockHandling(n++);
-
-        if(reading)
-            return 0;
-        w = write_nonBlocking(mode);
-    }
-    if(mode)
-        cmd[0] = '\0';
-    else
-        cmd[0] = '\0';
-
-    return 1;
-}
-
-void deadlockHandling(unsigned int n)
-{
-    if(n < n_max)
-    {
-        t += (unsigned long)random(t_min, t_max);
-        if(t%2)
-        {
-            reading = !reading;
-        }
-    }
-}
-*/
-
-
 bool read_nonBlocking() // robot
 {
 	if(radio.available())
@@ -1566,26 +1504,30 @@ bool read_nonBlocking() // robot
         bool done = false;
         while (!done)
             done = radio.read( rcv, sizeof(rcv) );
-        processing();
-        return 1; // TODO: return 0;
+        return 0; // success
     }
+    return 1; // nothing to be read 
 }
 
 
 bool write_nonBlocking()
 {
     bool check;
+    if( radio.isAckPayloadAvailable() ) // should I do it outside this function??
+    {
+      radio.read(&rcv,sizeof(rcv));
+      if(!isSubstring(copy,rcv) && rcv[0] != '\0') // is it something new?
+      {
+          Serial.println(rcv);
+          copyString(rcv,copy);
+      }
+    }
+
     set_msg();
     check = radio.write( cmd, sizeof(cmd));
     cmd[0] = '\0';
 
-    if( radio.isAckPayloadAvailable() )
-    {
-      radio.read(&rcv,sizeof(rcv));
-      Serial.println(rcv);
-    }
-
-    return check; // TODO: return 0 if succeeded
+    return !check; // return 0 if successful.
 }
 
 void statusFeedback(char iteration)
@@ -1595,53 +1537,52 @@ void statusFeedback(char iteration)
 
     // Safety Button
     if(rcv[0] != '\0')
-        concatenate(cmd,rcv);
+        append(cmd,rcv);
     else
-        concatenate(cmd,"x");
+        append(cmd,"x");
 
-    aux[0] = ' ';
-    aux[1] = '[';
-    aux[2] = iteration;
-    aux[3] = ']';
-    aux[4] = '\0';
+    // aux[0] = ' ';
+    // aux[1] = '[';
+    // aux[2] = iteration;
+    // aux[3] = ']';
+    // aux[4] = '\0';
+    // append(cmd,aux);
+    // append(cmd," ");
 
-    concatenate(cmd,aux);
-
-    concatenate(cmd," ");
     writeSensorsData();
 
     // Move
     if( (USS[0].mean < minDist)||(USS[0].mean < minDist)||(USS[2].mean < minDist)||(USS[3].mean < minDist)||(USS[4].mean < minDist) )
-        concatenate(cmd,"STP ");
+        append(cmd,"STP ");
     else
     {
         if(OS > 0)
             switch (T[OS])
             {
                 case (E_L):
-                    concatenate(cmd,"E_L ");
+                    append(cmd,"E_L ");
                     break;
                 case (E_M):
-                    concatenate(cmd,"E_M ");
+                    append(cmd,"E_M ");
                     break;
                 case (E_F):
-                    concatenate(cmd,"E_F ");
+                    append(cmd,"E_F ");
                     break;
                 case (D_L):
-                    concatenate(cmd,"D_L ");
+                    append(cmd,"D_L ");
                     break;
                 case (D_M):
-                    concatenate(cmd,"D_M ");
+                    append(cmd,"D_M ");
                     break;
                 case (D_F):
-                    concatenate(cmd,"D_F ");
+                    append(cmd,"D_F ");
                     break;
                 case (Frente):
-                    concatenate(cmd,"Fre ");
+                    append(cmd,"Fre ");
                     break;
             }
         else
-            concatenate(cmd,"OoR ");
+            append(cmd,"OoR ");
     }
 
 /*
@@ -1650,56 +1591,56 @@ void statusFeedback(char iteration)
     {
         OS = OS-16;
         if(USS[4].mean < minDist)
-            concatenate(cmd,"!");
+            append(cmd,"!");
         else
-            concatenate(cmd,"1");
+            append(cmd,"1");
     }
     else
-        concatenate(cmd,"0");
+        append(cmd,"0");
 
     if(OS >= 8)
     {
         OS = OS-8;
         if(USS[3].mean < minDist)
-            concatenate(cmd,"!");
+            append(cmd,"!");
         else
-            concatenate(cmd,"1");
+            append(cmd,"1");
     }
     else
-        concatenate(cmd,"0");
+        append(cmd,"0");
 
     if(OS >= 4)
     {
         OS = OS-4;
         if(USS[2].mean < minDist)
-            concatenate(cmd,"!");
+            append(cmd,"!");
         else
-            concatenate(cmd,"1");
+            append(cmd,"1");
     }
     else
-        concatenate(cmd,"0");
+        append(cmd,"0");
 
     if(OS >= 2)
     {
         OS = OS-2;
         if(USS[1].mean < minDist)
-            concatenate(cmd,"!");
+            append(cmd,"!");
         else
-            concatenate(cmd,"1");
+            append(cmd,"1");
     }
     else
-        concatenate(cmd,"0");
+        append(cmd,"0");
 
     if(OS >= 1)
     {
         OS = OS-1;
         if(USS[0].mean < minDist)
-            concatenate(cmd,"!");
+            append(cmd,"!");
         else
-            concatenate(cmd,"1");
+            append(cmd,"1");
     }
     else
-        concatenate(cmd,"0");
+        append(cmd,"0");
 */
 
 
@@ -1725,12 +1666,7 @@ void autonomous()
         else 
             iteration++;
 
-        if(radio.available())
-        {
-            bool done = false;
-            while( (!done) && (millis() < t + t_start) ) // checa deadline por preciosismo...
-                done = radio.read( rcv, sizeof(rcv) );
-        }
+        read_nonBlocking();
         if(rcv[0] == '-')
             break;
         if(rcv[0] == '+')
@@ -1766,26 +1702,25 @@ void flushLogData(int N_buffer)
             cmd[0] = '{'; // is it really necessary??
             cmd[1] = '\0'; // is it really necessary??
             int2char(aux,N_buffer);
-            concatenate(cmd,aux);
-            concatenate(cmd,"} ");
+            append(cmd,aux);
+            append(cmd,"} ");
             int2char(aux,buffer[N_buffer][4]);
-            concatenate(cmd,aux);
-            concatenate(cmd," | ");
+            append(cmd,aux);
+            append(cmd,"|");
             int2char(aux,buffer[N_buffer][3]);
-            concatenate(cmd,aux);
-            concatenate(cmd," | ");
+            append(cmd,aux);
+            append(cmd,"|");
             int2char(aux,buffer[N_buffer][2]);
-            concatenate(cmd,aux);
-            concatenate(cmd," | ");
+            append(cmd,aux);
+            append(cmd,"|");
             int2char(aux,buffer[N_buffer][1]);
-            concatenate(cmd,aux);
-            concatenate(cmd," | ");
+            append(cmd,aux);
+            append(cmd,"|");
             int2char(aux,buffer[N_buffer][0]);
-            concatenate(cmd,aux);
-        }
-        else
-        {
-            logging_flag = LOW;
+            append(cmd,aux);
+            radio.writeAckPayload( 1, cmd, sizeof(cmd) );
+            if(N_buffer == buffer_size-1)
+               logging_flag = LOW;
         }
     }
 }
@@ -1795,20 +1730,20 @@ void writeSensorsData()
     char aux[6];
 
     int2char(aux,USS[4].mean);
-    concatenate(cmd,aux);
-    concatenate(cmd,"|");
+    append(cmd,aux);
+    append(cmd,"|");
     int2char(aux,USS[3].mean);
-    concatenate(cmd,aux);
-    concatenate(cmd,"|");
+    append(cmd,aux);
+    append(cmd,"|");
     int2char(aux,USS[2].mean);
-    concatenate(cmd,aux);
-    concatenate(cmd,"|");
+    append(cmd,aux);
+    append(cmd,"|");
     int2char(aux,USS[1].mean);
-    concatenate(cmd,aux);
-    concatenate(cmd,"|");
+    append(cmd,aux);
+    append(cmd,"|");
     int2char(aux,USS[0].mean);
-    concatenate(cmd,aux);
-    concatenate(cmd," ");
+    append(cmd,aux);
+    append(cmd," ");
 }
 
 void SensorsDataPrint()
@@ -1830,22 +1765,18 @@ void SensorsDataPrint()
         for (i = 0; i < 5; i++)
         {
             int2char(aux,USS[4-i].mean);
-            concatenate(status,aux);
+            append(status,aux);
             if(i<4)
-                concatenate(status,"|");
+                append(status,"|");
         }
-        if(radio.available())
-        {
-            bool done = false;
-            while( (!done) && (millis() < t + t_start) ) // checa deadline por preciosismo...
-                done = radio.read( rcv, sizeof(rcv) );
-        }
+
+        read_nonBlocking();
         if(rcv[0] == '-')
             break;
         if(rcv[0] == '+')
             t = millis();
 
-        write_command(status);
+        write_ackPayload(status);
         myPulseIn(dyn);
         getExtreamValues();
         rcv[0] = '\0';
