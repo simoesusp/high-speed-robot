@@ -1,5 +1,4 @@
 // TODO referenciar direitinho as referencias
-// TODO add clear function
 
 
 /*                      RELATED TO PWM LIBRARY USAGE 
@@ -78,7 +77,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // RADIO RELATED
 
-#define MaxPayload 32 // Maximum message size (32 bytes)
+#define MaxPayload 5 // Maximum message size (32 bytes)
 #define intCmd_size 9
 // ---------- safety button pins -----------------
 #define ON  2// always high
@@ -129,11 +128,9 @@ bool logging_flag;
 bool dyn = 1;
 
 // -------- communication related variables -----------------
-const uint64_t pipes[2] = {0xDEDEDEDEE7LL, 0xDEDEDEDEE9LL}; // Define the transmit pipe (Obs.: "LL" => "LongLong" type)
+const uint64_t pipe = 0xDEDEDEDEE7LL; // Define the transmit pipe (Obs.: "LL" => "LongLong" type)
 RF24 radio(CE_PIN, CSN_PIN); // Create a Radio Object
-bool reading; // reading/writing flag
 char rcv[MaxPayload]; // message received
-char msg[MaxPayload]; // used by remote control
 char cmd[MaxPayload]; // used by the robot
 char **intCmd; // internal commands
 long randNumber; // used by deadlock handling function
@@ -165,12 +162,12 @@ void autonomous();
 void logging();
 void flushLogData(int);
 // -------- communication oriented functions -------
-void communication(bool mode);
-bool Read_nonBlocking();
-bool Read_blocking();
-bool Write_nonBlocking(bool);
-bool Write_blocking(bool);
-void deadlockHandling(unsigned int);
+void communication();
+bool read_nonBlocking();
+// bool Read_blocking();
+bool write_nonBlocking();
+// bool Write_blocking(bool);
+// void deadlockHandling(unsigned int);
 void statusFeedback(char);
 void writeSensorsData();
 
@@ -182,7 +179,7 @@ void write_command(char*);
 int char2int(char*);
 void int2char(char *o,int n);
 
-void read_message(); // Serial or safety button reading for transmission
+void set_msg(); // transmits Serial.read() or safety button status - remote controller
 void setInternalCommands(char**); // robot commands
 bool processing(); // processes robot received data
 void action(int); // perform command
@@ -197,7 +194,6 @@ int myPulseIn(bool);
 int SensorReading();
 void getExtreamValues();
 void SensorsDataPrint();
-void SensorsDataSerialPrint();
 int obstacleShape();
 void speedControl(int);
 void initTable(short int *);
@@ -207,21 +203,18 @@ void initTable(short int *);
 void setup()
 {
     //------------------------ nRF24L01+ transceiver Settings -----------
-	//Serial.begin(9600);
 	Serial.begin(115200);
 	radio.begin();
-    radio.setRetries(1,15);
     radio.setDataRate(RF24_250KBPS);
 	radio.enableAckPayload();
-	radio.enableDynamicPayloads();
-	radio.openReadingPipe(1,pipes[(int)!select]);
-	radio.openWritingPipe(pipes[(int)select]);
     radio.setPALevel(RF24_PA_MAX);
-	randomSeed(analogRead(0));
-	reading = !select;
+    radio.setRetries(8,10);
+    //---------------------------------------------------------------
 
 	if(select) // robot
     {
+        radio.openReadingPipe(1,pipe);
+        radio.startListening();
         //------------------------ Ultrasound Sensors Settings -----------
 
         //sets ultrasonic ranging module pins, all 5 sensors share trigPin.
@@ -268,6 +261,7 @@ void setup()
     }
     else // remote control
     {
+        radio.openWritingPipe(pipe);
         pinMode(ON, OUTPUT);
         pinMode(OFF, OUTPUT);
         pinMode(state, INPUT);
@@ -286,7 +280,7 @@ void setup()
 
 void loop()
 {
-    communication(select);
+    communication();
 }
 
 /*---------------------------------  OBSTACLE AVOIDANCE STUFF    --------------------------------------------------------------------*/ 
@@ -954,32 +948,12 @@ void status()
 
 }
 
-void communication(bool mode)
+void communication()
 {
-	unsigned long t_aux = millis();
-	bool w = 0,r = 0, quit = 0;
-
-	while( (millis() < t_aux+t_com) && !(w&r) ) 
-    {	
-        if(reading)
-        {
-            if(Read_blocking())
-            {
-                r = 1;
-                reading = 0;
-                if(select)
-                    quit = processing(); // safety button status has been received
-            }
-        }
-        else
-        {
-            if( quit || Write_blocking(mode) )
-            {
-                w = 1;
-                reading = 1;
-            }
-        }
-    }
+    if(select) // robot
+        read_nonBlocking();
+    else // remote controller
+        write_nonBlocking();
 }
 
 
@@ -1015,7 +989,6 @@ void action(int n)
 
             case 4: //	   start
                 write_command("here we go!");
-                Write_nonBlocking(select);
                 start();
                 break;
 
@@ -1048,7 +1021,6 @@ void action(int n)
                 break;
             case 11: //	obstacle avoidance 
                 write_command("autonomous navigation");
-                Write_nonBlocking(select);
                 autonomous();
                 break;
             case 12: //	log
@@ -1137,9 +1109,6 @@ void start()
 {
     char iteration = '0'; // check for packet loss
     bool safe = 0;
-    reading = 1;
-    radio.startListening();
-    delay(1000);
 
     t = millis();
     while(millis() < t + t_start)
@@ -1283,35 +1252,35 @@ bool checkButton()
 {
     if(digitalRead(state) == HIGH)
     {
-        msg[0] = '+';
-        msg[1] = '\0';
+        cmd[0] = '+';
+        cmd[1] = '\0';
         return 1;
     }
     else
     {
-        msg[0] = '-';
-        msg[1] = '\0';
+        cmd[0] = '-';
+        cmd[1] = '\0';
         return 0;
     }
 }
 
-void read_message()
+void set_msg()
 {
-    if(Serial.available() == 0 && msg[0] == '\0')
+    if(Serial.available() == 0 && cmd[0] == '\0')
         checkButton();
     else
     {
         delay(100);
         int aux = 0;
         while(Serial.available() > 0)
-            msg[aux++] = Serial.read();
-        msg[aux] = '\0';
+            cmd[aux++] = Serial.read();
+        cmd[aux] = '\0';
 
-        if(aux != 0 && isSubstring("clear", msg) )
+        if(aux != 0 && isSubstring("clear", cmd) )
         {
             for(int i = 0; i < 50; i++)
                 Serial.println(" ");
-            msg[0] = '\0';
+            cmd[0] = '\0';
         }
     }
 
@@ -1337,7 +1306,7 @@ void read_message()
             aux[2] = rcv[3];
             aux[3] = '\0';
         }
-        int2char(msg,char2int(aux)+1);
+        int2char(cmd,char2int(aux)+1);
     }
 }
 
@@ -1355,6 +1324,7 @@ void copyString(char *o, char *c)
 void write_command(char *m)
 {
 	copyString(m,cmd);
+    radio.writeAckPayload( 1, cmd, sizeof(cmd) );
 }
 
 int mypow(int base, int exponent)
@@ -1526,11 +1496,12 @@ bool isSubstring(char *a, char *b)
 	return 1;
 }
 
+/*
 bool Read_blocking()
 {
 	radio.startListening();
 	delay(1);
-	bool r = Read_nonBlocking();
+	bool r = read_nonBlocking();
 	unsigned int n = 0;
 	t = millis();
 
@@ -1541,7 +1512,7 @@ bool Read_blocking()
 
 		if(!reading)
 			return 0;
-		r = Read_nonBlocking();
+		r = read_nonBlocking();
 	}
 	return 1;
 }
@@ -1554,8 +1525,8 @@ bool Write_blocking(bool mode) // mode 0: user written command; mode 1: std_comm
     unsigned int n = 0;
 
     if(!mode)
-        read_message();
-    w = Write_nonBlocking(mode);
+        set_msg();
+    w = write_nonBlocking(mode);
     t = millis();
     while(!w)
     {
@@ -1564,12 +1535,12 @@ bool Write_blocking(bool mode) // mode 0: user written command; mode 1: std_comm
 
         if(reading)
             return 0;
-        w = Write_nonBlocking(mode);
+        w = write_nonBlocking(mode);
     }
     if(mode)
         cmd[0] = '\0';
     else
-        msg[0] = '\0';
+        cmd[0] = '\0';
 
     return 1;
 }
@@ -1585,58 +1556,42 @@ void deadlockHandling(unsigned int n)
         }
     }
 }
+*/
 
-bool Read_nonBlocking() // tirei o startListening() daqui!!!!
+
+bool read_nonBlocking() // robot
 {
-	reading = 1;
-	if(!radio.available())
-		return 0;
-	bool done = false;
-	while (!done)
-		done = radio.read( rcv, sizeof(rcv) );
-	if(done)
+	if(radio.available())
     {
-        if(!select)
-        {
-            Serial.println(rcv);
-        }
-        return 1;
+        bool done = false;
+        while (!done)
+            done = radio.read( rcv, sizeof(rcv) );
+        processing();
+        return 1; // TODO: return 0;
     }
 }
 
 
-bool Write_nonBlocking(bool mode)
+bool write_nonBlocking()
 {
-	bool check;
-	reading = 0;
+    bool check;
+    set_msg();
+    check = radio.write( cmd, sizeof(cmd));
+    cmd[0] = '\0';
 
-	if(mode)
-	{
-        if(cmd[0] != '\0')
-            check = radio.write( cmd, sizeof(cmd));
-        else 
-            return 1;
-	}
-	else
-	{
-        if(msg[0] != '\0')
-        {
-            check = radio.write( msg, sizeof(msg));
-        }
-        else 
-        {
-            return 1;
-        }
-	}
+    if( radio.isAckPayloadAvailable() )
+    {
+      radio.read(&rcv,sizeof(rcv));
+      Serial.println(rcv);
+    }
 
-    return check;
+    return check; // TODO: return 0 if succeeded
 }
 
 void statusFeedback(char iteration)
 {
     int OS = obstacleShape();
     char aux[15];
-    radio.stopListening();
 
     // Safety Button
     if(rcv[0] != '\0')
@@ -1747,9 +1702,8 @@ void statusFeedback(char iteration)
         concatenate(cmd,"0");
 */
 
-    Write_nonBlocking(select);
-    radio.startListening();
 
+    radio.writeAckPayload(1,cmd,sizeof(cmd));
     rcv[0] = '\0';
     cmd[0] = '\0';
     aux[0] = '\0';
@@ -1760,10 +1714,6 @@ void autonomous()
 {
     char status[MaxPayload], iteration = '0'; // check for packet loss
     status[0] = '\0';
-
-    reading = 1;
-    radio.startListening();
-    delay(1000);
 
     t = millis();
     while(millis() < t + t_start)
@@ -1792,7 +1742,6 @@ void autonomous()
 
 void logging()
 {
-    radio.stopListening();
     for(int i = 0; i < buffer_size; i++)
     {
         ObstacleAvoid();
@@ -1868,12 +1817,8 @@ void SensorsDataPrint()
     char status[MaxPayload], aux[6],iteration = '0';
     status[0] = '\0';
 
-    reading = 1;
-    radio.startListening();
     myPulseIn(dyn);
     getExtreamValues();
-
-
     t = millis();
     while(millis() < t + t_start)
     {
@@ -1901,9 +1846,6 @@ void SensorsDataPrint()
             t = millis();
 
         write_command(status);
-        radio.stopListening();
-        Write_nonBlocking(select);
-        radio.startListening();
         myPulseIn(dyn);
         getExtreamValues();
         rcv[0] = '\0';
