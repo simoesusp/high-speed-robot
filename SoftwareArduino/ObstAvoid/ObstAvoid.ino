@@ -146,7 +146,7 @@ struct sensor_t
 
 bool safety_button; // robot: button status 
 
-    bool select = 0; // 0: master(remote control) ; 1: slave(robot) 
+    bool select = 1; // 0: master(remote control) ; 1: slave(robot) 
 
 short int *T;                  // Truth Table
 
@@ -159,6 +159,7 @@ void flushLogData(int);
 // -------- communication oriented functions -------
 void communication();
 bool read_nonBlocking();
+void read_Blocking();
 bool write_nonBlocking();
 void statusFeedback(char);
 void writeSensorsData();
@@ -200,7 +201,7 @@ void setup()
     radio.setDataRate(RF24_250KBPS);
 	radio.enableAckPayload();
     radio.setPALevel(RF24_PA_MAX);
-    radio.setRetries(8,10);
+    radio.setRetries(8,15);
     //---------------------------------------------------------------
 
 	if(select) // robot
@@ -952,7 +953,10 @@ void communication()
             processing();
     }
     else // remote controller
-        write_nonBlocking();
+    {
+        if( write_nonBlocking() ) // failed to send?
+           radio.write( cmd, sizeof(cmd) ); // try again. 
+    }
 }
 
 
@@ -1015,7 +1019,7 @@ void action(int n)
                 else
                     write_ackPayload("OFF");
                 break;
-            case 10: // print USS data  
+            case 10: // dist <=> print USS data  
                 SensorsDataPrint();
                 break;
             case 11: //	obstacle avoidance 
@@ -1169,11 +1173,7 @@ bool processing()
 
         if( number > 0 ) 
         {
-            if(logging_flag) // log data?
-            {
-                flushLogData(char2int(rcv));
-            }
-            else if(speed)
+             if(speed)
             {
                 if(left)
                 {
@@ -1270,12 +1270,7 @@ bool checkButton()
 void set_msg()
 {
     // if(Serial.available() == 0 && cmd[0] == '\0')
-    if(millis() > t + t_max )
-    {
-        checkButton();
-        t = millis();
-    }
-    else if( Serial.available() )
+    if( Serial.available() )
     {
         delay(1);
         int aux = 0;
@@ -1290,31 +1285,14 @@ void set_msg()
             cmd[0] = '\0';
         }
     }
-    else if(rcv[0] == '{') // if log data, ask for the next
+    else if(rcv[0] == '{') // metadata asking for safety button status
     {
-        char aux[4];
-        
-        if(rcv[2] == '}')
-        {
-            aux[0] = rcv[1];
-            aux[1] = '\0';
-        }
-        if(rcv[3] == '}')
-        {
-            aux[0] = rcv[1];
-            aux[1] = rcv[2];
-            aux[2] = '\0';
-        }
-        if(rcv[4] == '}')
-        {
-            aux[0] = rcv[1];
-            aux[1] = rcv[2];
-            aux[2] = rcv[3];
-            aux[3] = '\0';
-        }
-        int number = char2int(aux)+1;
-        if(number < buffer_size)
-            int2char(cmd,number);
+            checkButton();
+    }
+    else if(millis() > t + t_max )
+    {
+        checkButton();
+        t = millis();
     }
 }
 
@@ -1509,6 +1487,13 @@ bool read_nonBlocking() // robot
     return 1; // nothing to be read 
 }
 
+void read_Blocking() // robot
+{
+    while(!radio.available());
+    bool done = false;
+    while (!done)
+        done = radio.read( rcv, sizeof(rcv) );
+}
 
 bool write_nonBlocking()
 {
@@ -1535,19 +1520,12 @@ void statusFeedback(char iteration)
     int OS = obstacleShape();
     char aux[15];
 
-    // Safety Button
-    if(rcv[0] != '\0')
-        append(cmd,rcv);
-    else
-        append(cmd,"x");
-
-    // aux[0] = ' ';
-    // aux[1] = '[';
-    // aux[2] = iteration;
-    // aux[3] = ']';
-    // aux[4] = '\0';
-    // append(cmd,aux);
-    // append(cmd," ");
+     aux[1] = '{';
+     aux[2] = iteration;
+     aux[3] = '}';
+     aux[4] = '\0';
+     append(cmd,aux);
+     append(cmd," ");
 
     writeSensorsData();
 
@@ -1674,55 +1652,64 @@ void autonomous()
         statusFeedback(iteration);
     }
     stop();
+
 }
 
 void logging()
 {
-    for(int i = 0; i < buffer_size; i++)
+    t = millis();
+    while(millis() < t + t_start)
     {
-        ObstacleAvoid();
-        buffer[i][0] = USS[0].mean;
-        buffer[i][1] = USS[1].mean;
-        buffer[i][2] = USS[2].mean;
-        buffer[i][3] = USS[3].mean;
-        buffer[i][4] = USS[4].mean;
-    }
 
-    flushLogData(0);
-    logging_flag = HIGH;
+        for(int i = 0; i < buffer_size; i++)
+        {
+            ObstacleAvoid();
+            buffer[i][0] = USS[0].mean;
+            buffer[i][1] = USS[1].mean;
+            buffer[i][2] = USS[2].mean;
+            buffer[i][3] = USS[3].mean;
+            buffer[i][4] = USS[4].mean;
+        }
+        stop();
+
+        flushLogData(0);
+        for(int i = 1; i < buffer_size; i++)
+        {
+            read_Blocking();
+            flushLogData(i);
+        }
+
+        if(rcv[0] == '-')
+            break;
+
+        if(rcv[0] == '+')
+            t = millis();
+    }
 }
 
 void flushLogData(int N_buffer)
 {
-    if(N_buffer >= 0)
-    {
-        if(N_buffer < buffer_size)
-        {
-            char aux[5];
-            cmd[0] = '{'; // is it really necessary??
-            cmd[1] = '\0'; // is it really necessary??
-            int2char(aux,N_buffer);
-            append(cmd,aux);
-            append(cmd,"} ");
-            int2char(aux,buffer[N_buffer][4]);
-            append(cmd,aux);
-            append(cmd,"|");
-            int2char(aux,buffer[N_buffer][3]);
-            append(cmd,aux);
-            append(cmd,"|");
-            int2char(aux,buffer[N_buffer][2]);
-            append(cmd,aux);
-            append(cmd,"|");
-            int2char(aux,buffer[N_buffer][1]);
-            append(cmd,aux);
-            append(cmd,"|");
-            int2char(aux,buffer[N_buffer][0]);
-            append(cmd,aux);
-            radio.writeAckPayload( 1, cmd, sizeof(cmd) );
-            if(N_buffer == buffer_size-1)
-               logging_flag = LOW;
-        }
-    }
+    char aux[5];
+    cmd[0] = '{'; // is it really necessary??
+    cmd[1] = '\0'; // is it really necessary??
+    int2char(aux,N_buffer);
+    append(cmd,aux);
+    append(cmd,"} ");
+    int2char(aux,buffer[N_buffer][4]);
+    append(cmd,aux);
+    append(cmd,"|");
+    int2char(aux,buffer[N_buffer][3]);
+    append(cmd,aux);
+    append(cmd,"|");
+    int2char(aux,buffer[N_buffer][2]);
+    append(cmd,aux);
+    append(cmd,"|");
+    int2char(aux,buffer[N_buffer][1]);
+    append(cmd,aux);
+    append(cmd,"|");
+    int2char(aux,buffer[N_buffer][0]);
+    append(cmd,aux);
+    radio.writeAckPayload( 1, cmd, sizeof(cmd) );
 }
 
 void writeSensorsData()
@@ -1757,14 +1744,15 @@ void SensorsDataPrint()
     t = millis();
     while(millis() < t + t_start)
     {
-        status[0] = '[';
+        status[0] = '{';
         status[1] = iteration;
-        status[2] = ']';
+        status[2] = '}';
         status[3] = '\0';
 
         for (i = 0; i < 5; i++)
         {
-            int2char(aux,USS[4-i].mean);
+            int2char(aux,USS[4-i].distance[USS[4-i].pointer]);
+            //int2char(aux,USS[4-i].mean);
             append(status,aux);
             if(i<4)
                 append(status,"|");
