@@ -45,7 +45,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <PWM.h>
 
 /*=============================   DEFINES   ========================================== */
-#define Ncommands 13 // number of commands available
+#define Ncommands 14 // number of commands available
 // ------- radio pins ----------------------------
 #define CE_PIN   5
 #define CSN_PIN 6
@@ -72,7 +72,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // RADIO RELATED
 
 #define MaxPayload 24 // Maximum message size (32 bytes)
-#define intCmd_size 9
+#define intCmd_size 9 // Bytes
 // ---------- safety button pins -----------------
 #define ON  9// always high
 #define state 8 // says if in trouble or safe!
@@ -119,7 +119,6 @@ bool left; // left motor on/off flag
 bool right; // right motor on/off flag
 bool speed; // if true, try to read pwm_value from remote control
 bool frequency;// if true, try to read frequency from remote control
-bool logging_flag;
 bool dyn = 1; // dynamical/fixed USS echo reading
 
 // -------- communication related variables -----------------
@@ -155,7 +154,7 @@ short int *T;                  // Truth Table
 /*========================= FUNCTIONS  ============================================================*/
 void autonomous();
 void logging();
-void flushLogData(int);
+void flushLogData(int); // TODO: find a better name for it.
 // -------- communication oriented functions -------
 void communication();
 bool read_nonBlocking();
@@ -218,6 +217,9 @@ void setup()
         pinMode(echoPin3, INPUT);
         pinMode(echoPin4, INPUT);
         SensorSettings();
+        // to avoid first mean values to be absurd take a few samples from the environment before running
+        for(int i = 0; i < 10; i++)
+            SensorReading();
         //---------------------------------------------------------------
 
         // --------------------- MOTORS SETTINGS -----------------------
@@ -250,7 +252,6 @@ void setup()
         for(int i = 0; i < buffer_size; i++)
             buffer[i] = (unsigned int*)malloc(5*sizeof(unsigned int));
 
-        logging_flag = LOW;
         T = (short int*)malloc(32*sizeof(short int));
         initTable(T); // T: truth table
     }
@@ -268,9 +269,6 @@ void setup()
     }
 
 
-    // to avoid first mean values to be absurd take a few samples from the environment before running
-    for(int i = 0; i < 10; i++)
-        SensorReading();
 
     t = millis();
 }
@@ -312,23 +310,23 @@ void SensorSettings()
 {
     USS[0].Bit = digitalPinToBitMask(echoPin0);
     USS[0].port = digitalPinToPort(echoPin0);
-    USS[0].pointer = -1;
+    USS[0].pointer = 4;
 
     USS[1].Bit = digitalPinToBitMask(echoPin1);
     USS[1].port = digitalPinToPort(echoPin1);
-    USS[1].pointer = -1;
+    USS[1].pointer = 4;
 
     USS[2].Bit = digitalPinToBitMask(echoPin2);
     USS[2].port = digitalPinToPort(echoPin2);
-    USS[2].pointer = -1;
+    USS[2].pointer = 4;
 
     USS[3].Bit = digitalPinToBitMask(echoPin3);
     USS[3].port = digitalPinToPort(echoPin3);
-    USS[3].pointer = -1;
+    USS[3].pointer = 4;
 
     USS[4].Bit = digitalPinToBitMask(echoPin4);
     USS[4].port = digitalPinToPort(echoPin4);
-    USS[4].pointer = -1;
+    USS[4].pointer = 4;
 }
 
 
@@ -1029,6 +1027,10 @@ void action(int n)
             case 12: //	log
                 logging();
                 break;
+                
+            case 13: // test	
+                test();
+                break;
         }
 }
 
@@ -1449,6 +1451,7 @@ void setInternalCommands(char**m)
 	copyString("dist",m[10]);
 	copyString("auto",m[11]);
 	copyString("log",m[12]);
+	copyString("test",m[13]);
 }
 
 bool isSubstring(char *a, char *b)
@@ -1501,7 +1504,7 @@ bool write_nonBlocking()
     if( radio.isAckPayloadAvailable() ) // should I do it outside this function??
     {
       radio.read(&rcv,sizeof(rcv));
-      if(!isSubstring(copy,rcv) && rcv[0] != '\0') // is it something new?
+      if(!isSubstring(copy,rcv) && rcv[0] != '\0' && rcv[0] != '#') // is it something new?
       {
           Serial.println(rcv);
           copyString(rcv,copy);
@@ -1646,7 +1649,10 @@ void autonomous()
 
         read_nonBlocking();
         if(rcv[0] == '-')
+        {
+            write_ackPayload("#");
             break;
+        }
         if(rcv[0] == '+')
             t = millis();
         statusFeedback(iteration);
@@ -1677,21 +1683,25 @@ void logging()
         {
             read_Blocking();
             flushLogData(i);
+
+            if(rcv[0] == '-')
+            {
+                write_ackPayload("#");
+                break;
+            }
+
+            if(rcv[0] == '+')
+                t = millis();
         }
 
-        if(rcv[0] == '-')
-            break;
-
-        if(rcv[0] == '+')
-            t = millis();
     }
 }
 
 void flushLogData(int N_buffer)
 {
     char aux[5];
-    cmd[0] = '{'; // is it really necessary??
-    cmd[1] = '\0'; // is it really necessary??
+    cmd[0] = '{'; 
+    cmd[1] = '\0';
     int2char(aux,N_buffer);
     append(cmd,aux);
     append(cmd,"} ");
@@ -1760,7 +1770,10 @@ void SensorsDataPrint()
 
         read_nonBlocking();
         if(rcv[0] == '-')
+        {
+            write_ackPayload("#");
             break;
+        }
         if(rcv[0] == '+')
             t = millis();
 
@@ -1774,5 +1787,46 @@ void SensorsDataPrint()
             iteration = '0';
         else 
             iteration++;
+    }
+}
+
+void test()
+{
+    t = millis();
+    while(millis() < t + t_start)
+    {
+
+        for(int i = 1; i < buffer_size; i = i+2)
+        {
+            SensorReading();
+            buffer[i-1][0] = USS[0].distance[USS[0].pointer];
+            buffer[i-1][1] = USS[1].distance[USS[1].pointer];
+            buffer[i-1][2] = USS[2].distance[USS[2].pointer];
+            buffer[i-1][3] = USS[3].distance[USS[3].pointer];
+            buffer[i-1][4] = USS[4].distance[USS[4].pointer];
+
+            buffer[i][0] = USS[0].mean;
+            buffer[i][1] = USS[1].mean;
+            buffer[i][2] = USS[2].mean;
+            buffer[i][3] = USS[3].mean;
+            buffer[i][4] = USS[4].mean;
+        }
+
+        flushLogData(0);
+
+        for(int i = 1; i < buffer_size; i++)
+        {
+            read_Blocking();
+            flushLogData(i);
+
+            if(rcv[0] == '-')
+            {
+                write_ackPayload("#");
+                break;
+            }
+
+            if(rcv[0] == '+')
+                t = millis();
+        }
     }
 }
