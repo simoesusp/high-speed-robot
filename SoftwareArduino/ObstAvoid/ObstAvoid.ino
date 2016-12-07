@@ -37,7 +37,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
    Based on examples at http://www.bajdi.com/
    Questions: terry@yourduino.com */
 
-
 #include <SPI.h>
 #include <nRF24L01.h> // acho que não está sendo utilizada!!!
 #include <RF24.h>
@@ -576,25 +575,28 @@ int myPulseIn( bool dynamical_reading)
         }
 
         if (millis() > initTime + time_out)
+        {
+            // if there is no echo, we assume there is nothing in front of us
+            if( !(USS[0].data_available) )
+                USS[0].distance[USS[0].pointer] = outOfRange;
+
+            if( !(USS[1].data_available) )
+                USS[1].distance[USS[1].pointer] = outOfRange;
+
+            if( !(USS[2].data_available) )
+                USS[2].distance[USS[2].pointer] = outOfRange;
+
+            if( !(USS[3].data_available) )
+                USS[3].distance[USS[3].pointer] = outOfRange;
+
+            if( !(USS[4].data_available) )
+                USS[4].distance[USS[4].pointer] = outOfRange;
             return 0;
+        }
+
         finished =  USS[0].data_available &  USS[1].data_available &  USS[2].data_available &  USS[3].data_available & USS[4].data_available;
     }
 
-    // if there is no echo, we assume there is nothing in front of us
-    if( !(USS[0].data_available) )
-        USS[0].distance[USS[0].pointer] = outOfRange;
-
-    if( !(USS[1].data_available) )
-        USS[1].distance[USS[1].pointer] = outOfRange;
-
-    if( !(USS[2].data_available) )
-        USS[2].distance[USS[2].pointer] = outOfRange;
-
-    if( !(USS[3].data_available) )
-        USS[3].distance[USS[3].pointer] = outOfRange;
-
-    if( !(USS[4].data_available) )
-        USS[4].distance[USS[4].pointer] = outOfRange;
 
     if(!dynamical_reading)
         while(millis() < initTime + time_out) ; // TODO: wasted time, find out something useful to do here.
@@ -1145,7 +1147,10 @@ void start()
         }
 
         if(rcv[0] == '-')
+        {
+            write_ackPayload("#");
             break;
+        }
 
         if(rcv[0] == '+')
             t = millis();
