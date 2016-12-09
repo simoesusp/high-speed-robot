@@ -44,7 +44,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <PWM.h>
 
 /*=============================   DEFINES   ========================================== */
-#define Ncommands 14 // number of commands available
+#define Ncommands 16 // number of commands available
 // ------- radio pins ----------------------------
 #define CE_PIN   5
 #define CSN_PIN 6
@@ -65,7 +65,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // --------- deadlines (in millisseconds)----------------------------
 #define t_max 100 
-#define t_start 1000 // deadline for loss of radio connection when running - autonomous() as well as start() -
+#define t_start 500 // deadline for loss of radio connection when running - autonomous() as well as start() -
 #define time_out 30 // USS reading deadline <=> 6.8m (datasheet fala que só vai até 4m...)
 
 // RADIO RELATED
@@ -88,10 +88,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // ---------- obstacle avoidance related defines ---
 
 //TODO: nao esquecer de arrumar de novo!!!!
-#define minDist 150 // obstacle can't get any closer than minDist (in cm) from the robot
-#define warningDist 250 // minDist < obstacle distance < warningDist => warning zone!
+#define minDist 30 // obstacle can't get any closer than minDist (in cm) from the robot
+#define warningDist 100 // minDist < obstacle distance < warningDist => warning zone!
 #define outOfRange 400
 
+/*
+#define E_L 0 // turn softly to the left
+#define E_M 1 // turn to the left
+#define E_F 2 // turn abruptly to the right
+#define Frente 3 // straight ahead
+#define D_L 4 // turn softly to the right
+#define D_M 5 // turn to the right
+#define D_F 6 // turn abruptly to the right
+*/
 
 #define E_L 0 // turn softly to the left
 #define E_M 1 // turn to the left
@@ -119,6 +128,7 @@ bool right; // right motor on/off flag
 bool speed; // if true, try to read pwm_value from remote control
 bool frequency;// if true, try to read frequency from remote control
 bool dyn = 1; // dynamical/fixed USS echo reading
+bool all_sensors = 0;
 
 // -------- communication related variables -----------------
 const uint64_t pipe = 0xDEDEDEDEE7LL; // Define the transmit pipe (Obs.: "LL" => "LongLong" type)
@@ -179,6 +189,7 @@ void start(); // turn selected motors on
 bool checkButton(); // check safety button status
 
 //--------- obstacle avoidance related functions ---
+void quiet();
 void ObstacleAvoid();
 void SensorSettings();
 int myPulseIn(bool);
@@ -612,34 +623,44 @@ rodas sem aderência. Não usar X_F
 void initTable(short int *T)
 {
     T[B00000] = Frente; // doesnt happen!!!
-    T[B00001] = E_L;  
-    T[B00010] = E_M;  
-    T[B00011] = E_M;  
-    T[B00100] = E_F;  
+
+/**/T[B00001] = E_F; // E_L;  
+
+    T[B00010] = E_F; // E_M;  
+    T[B00011] = E_F; // E_M;  
+
+/**/T[B00100] = E_F;  
+
     T[B00101] = E_F;  
     T[B00110] = E_F;  
     T[B00111] = E_F;  
-    T[B01000] = D_M;  
-    T[B01001] = D_M;  
+    T[B01000] = D_F; // D_M;  
+    T[B01001] = D_F; // D_M;  
     // T[B01010] = Frente;  
     T[B01010] = E_F;  
-    T[B01011] = E_M;  
+    T[B01011] = E_F; // E_M;  
     T[B01100] = D_F;  
     T[B01101] = E_F;  
     T[B01110] = E_F;  
     T[B01111] = E_F;  
-    T[B10000] = D_L;  
-    T[B10001] = Frente;  
-    T[B10010] = E_M;  
-    T[B10011] = E_M;  
-    T[B10100] = D_F;  
-    T[B10101] = E_F;  
+
+/**/T[B10000] = D_F; // D_L;  
+
+/**/T[B10001] = Frente;  
+
+    T[B10010] = E_F; // E_M;  
+    T[B10011] = E_F; // E_M;  
+
+/**/T[B10100] = D_F;  
+
+/**/T[B10101] = E_F;  
+
     //T[B10110] = D_F;  
     T[B10110] = E_F;  
     T[B10111] = E_F;  
-    T[B11000] = D_M;  
-    T[B11001] = D_M;  
-    T[B11010] = D_M;  
+    T[B11000] = D_F; // D_M;  
+    T[B11001] = D_F; // D_M;  
+    T[B11010] = D_F; // D_M;  
     T[B11011] = Frente;  
     T[B11100] = D_F;  
     T[B11101] = D_F;  
@@ -886,14 +907,20 @@ int obstacleShape()
     if (USS[0].mean < warningDist) 
         obstacle += B00001; // 1st bit <=> 1st sensor
 
-    if (USS[1].mean < warningDist) 
-        obstacle += B00010; // 2nd bit <=> 2nd sensor
+    if(all_sensors)
+    {
+        if (USS[1].mean < warningDist) 
+            obstacle += B00010; // 2nd bit <=> 2nd sensor
+    }
 
     if (USS[2].mean < warningDist) 
         obstacle += B00100; // 3rd bit <=> 3rd sensor
 
-    if (USS[3].mean < warningDist) 
-        obstacle += B01000; // 4th bit <=> 4th sensor
+    if(all_sensors)
+    {
+        if (USS[3].mean < warningDist) 
+            obstacle += B01000; // 4th bit <=> 4th sensor
+    }
 
     if (USS[4].mean < warningDist) 
         obstacle += B10000; // 5th bit <=> 5th sensor
@@ -915,6 +942,11 @@ void status()
 	int i;
 
 	status[0] = 48+left;
+	status[1] = ' ';
+	status[2] = '\0';
+
+/*
+	status[0] = 48+left;
 	status[1] = 'L';
 	status[2] = 48+frequency;
 	status[3] = 'F';
@@ -924,22 +956,40 @@ void status()
 	status[7] =  'R';
 	status[8] = ':';
 	status[9] = '\0';
+*/
 
+/*
 	int2char(aux,frequency_l);
 	append(status,aux);
 	append(status,"F");
+*/
 
 	int2char(aux,pwm_value_l);
 	append(status,aux);
 	append(status,"S|");
 
+	aux[0] = 48+right;
+	aux[1] = ' ';
+	aux[2] = '\0';
+	append(status,aux);
+
+/*
 	int2char(aux,frequency_r);
 	append(status,aux);
 	append(status,"f");
+*/
 
 	int2char(aux,pwm_value_r);
 	append(status,aux);
-	append(status,"S");
+	append(status,"S ");
+
+	aux[0] = 's';
+	aux[1] = 48+speed;
+	aux[2] = ' ';
+	aux[3] = 'f';
+	aux[4] = 48+frequency;
+	aux[5] = '\0';
+	append(status,aux);
 
 	write_ackPayload(status);
 
@@ -1033,6 +1083,18 @@ void action(int n)
             case 13: // test	
                 test();
                 break;
+                
+            case 14: // test	
+                quiet();
+                break;
+
+            case 15: // test	
+                all_sensors = ! all_sensors;
+                if(all_sensors)
+                    write_ackPayload("using 5 USS.");
+                else
+                    write_ackPayload("using 3 USS.");
+                break;
         }
 }
 
@@ -1118,6 +1180,7 @@ void start()
     bool safe = 0;
 
     t = millis();
+    write_ackPayload("{");
     while(millis() < t + t_start)
     {
         if( SensorReading() < 0)
@@ -1163,6 +1226,7 @@ void start()
             iteration++;
     }
     stop();
+    write_ackPayload("#");
 }
 
 bool processing()
@@ -1457,6 +1521,9 @@ void setInternalCommands(char**m)
 	copyString("auto",m[11]);
 	copyString("log",m[12]);
 	copyString("test",m[13]);
+	copyString("quiet",m[14]);
+
+	copyString("USS",m[15]);
 }
 
 bool isSubstring(char *a, char *b)
@@ -1528,12 +1595,17 @@ void statusFeedback(char iteration)
     int OS = obstacleShape();
     char aux[15];
 
-     aux[1] = '{';
-     aux[2] = iteration;
-     aux[3] = '}';
-     aux[4] = '\0';
+/*
+     aux[0] = '{';
+     aux[1] = iteration;
+     aux[2] = '}';
+     aux[3] = '\0';
      append(cmd,aux);
      append(cmd," ");
+*/
+     aux[0] = '{';
+     aux[1] = '\0';
+     append(cmd,aux);
 
     writeSensorsData();
 
@@ -1546,29 +1618,29 @@ void statusFeedback(char iteration)
             switch (T[OS])
             {
                 case (E_L):
-                    append(cmd,"E_L ");
+                    append(cmd,"EL ");
                     break;
                 case (E_M):
-                    append(cmd,"E_M ");
+                    append(cmd,"EM ");
                     break;
                 case (E_F):
-                    append(cmd,"E_F ");
+                    append(cmd,"EF ");
                     break;
                 case (D_L):
-                    append(cmd,"D_L ");
+                    append(cmd,"DL ");
                     break;
                 case (D_M):
-                    append(cmd,"D_M ");
+                    append(cmd,"DM ");
                     break;
                 case (D_F):
-                    append(cmd,"D_F ");
+                    append(cmd,"DF ");
                     break;
                 case (Frente):
-                    append(cmd,"Fre ");
+                    append(cmd,"Fr ");
                     break;
             }
         else
-            append(cmd,"OoR ");
+            append(cmd,"OR ");
     }
 
 /*
@@ -1643,27 +1715,68 @@ void autonomous()
     status[0] = '\0';
 
     t = millis();
+    write_ackPayload("{");
     while(millis() < t + t_start)
     {
         ObstacleAvoid();
 
-        if (iteration == '9')
-            iteration = '0';
-        else 
-            iteration++;
-
-        read_nonBlocking();
-        if(rcv[0] == '-')
+        if(radio.available())
         {
-            write_ackPayload("#");
-            break;
+            bool done = false;
+            while (!done && millis() < t + t_start)
+                done = radio.read( rcv, sizeof(rcv) );
+
+            if(rcv[0] == '-')
+            {
+                stop();
+                write_ackPayload("#");
+                break;
+            }
+
+            if(rcv[0] == '+')
+                t = millis();
+
+            statusFeedback(iteration);
+            rcv[0] = '\0';
+            if (iteration == '9')
+                iteration = '0';
+            else 
+                iteration++;
         }
-        if(rcv[0] == '+')
-            t = millis();
-        statusFeedback(iteration);
+
     }
     stop();
+    write_ackPayload("#");
+}
 
+
+void quiet()
+{
+    t = millis();
+    while(millis() < t + t_start)
+    {
+        ObstacleAvoid();
+
+        if(radio.available())
+        {
+            bool done = false;
+            while (!done && millis() < t + t_start)
+                done = radio.read( rcv, sizeof(rcv) );
+
+            if(rcv[0] == '-')
+            {
+                stop();
+                write_ackPayload("#");
+                break;
+            }
+
+            if(rcv[0] == '+')
+                t = millis();
+        }
+
+    }
+    stop();
+    write_ackPayload("#");
 }
 
 void logging()
@@ -1671,7 +1784,6 @@ void logging()
     t = millis();
     while(millis() < t + t_start)
     {
-
         for(int i = 0; i < buffer_size; i++)
         {
             ObstacleAvoid();
@@ -1692,6 +1804,7 @@ void logging()
             if(rcv[0] == '-')
             {
                 write_ackPayload("#");
+                stop();
                 break;
             }
 
@@ -1699,7 +1812,25 @@ void logging()
                 t = millis();
         }
 
+//TODO: check if indeed necessary...
+        if(radio.available())
+        {
+            bool done = false;
+            while (!done && millis() < t + t_start)
+                done = radio.read( rcv, sizeof(rcv) );
+
+            if(rcv[0] == '-')
+            {
+                stop();
+                write_ackPayload("#");
+                break;
+            }
+
+            if(rcv[0] == '+')
+                t = millis();
+        }
     }
+    stop();
 }
 
 void flushLogData(int N_buffer)
