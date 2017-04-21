@@ -54,12 +54,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #define stop_pwm_l 110 // pwm in which left motor is stopped
 #define stop_pwm_r 90  // pwm in which right motor is stopped
-#define fullSpeed_l 170
-#define fullSpeed_r 170
-#define avgSpeed_l 140
-#define avgSpeed_r 150
-#define lowSpeed_l 120
-#define lowSpeed_r 100
+
+int fullSpeed_l =  170;
+int fullSpeed_r =  170;
+int avgSpeed_l =  140;
+int avgSpeed_r =  150;
+int lowSpeed_l =  120;
+int lowSpeed_r =  100;
 
 #define buffer_size 50
 
@@ -121,6 +122,7 @@ bool frequency;// if true, try to read frequency from remote control
 bool dyn = 1; // dynamical/fixed USS echo reading
 bool all_sensors = 0;
 
+int obstacle_avoidance_method = 0;
 // -------- communication related variables -----------------
 const uint64_t pipe = 0xDEDEDEDEE7LL; // Define the transmit pipe (Obs.: "LL" => "LongLong" type)
 RF24 radio(CE_PIN, CSN_PIN); // Create a Radio Object
@@ -152,6 +154,11 @@ short int *T;                  // Truth Table
 /*=======================================================================================================*/
 
 /*========================= FUNCTIONS  ============================================================*/
+
+void ObstacleAvoidanceTechnique(int obstacle_avoidance_method, int obstacle);
+void proportionalController();
+
+
 void autonomous();
 void logging();
 void flushLogData(int); // TODO: find a better name for it.
@@ -293,7 +300,7 @@ void ObstacleAvoid()
         stop();
     }
     else // Warning Zone and Safe Zone
-        speedControl(obstacle);
+        ObstacleAvoidanceTechnique(obstacle_avoidance_method, obstacle);
 }
 
 // incluir tratativas de erro?
@@ -1958,4 +1965,44 @@ void test()
                 t = millis();
         }
     }
+}
+
+
+
+void ObstacleAvoidanceTechnique(int obstacle_avoidance_method, int obstacle)
+{
+    switch(obstacle_avoidance_method)
+    {
+        case 0:
+            speedControl(obstacle);
+            break;
+        case 1:
+            proportionalController();
+            break;
+        default:
+            speedControl(obstacle);
+    }
+}
+
+void proportionalController()
+{
+    /*
+                            TODO
+        o sensor com menor valor lido sera levado em consideração, não a média
+        usa 3 pra esquerda e 2 pra direita
+        ACERTAR O PRINT DOS DADOS PARA QUE ELE RETORNE AS VELOCIDADES
+    */
+    char status[20], aux[5];
+    int leftSpeed = ( ( (USS[0].mean + USS[1].mean)/2 - 100 )*(avgSpeed_l - 120) )/(400 - 100);
+    int rightSpeed = ( ( (USS[3].mean + USS[4].mean)/2 - 100 )*(avgSpeed_r  - 100) )/(400 - 100);
+
+    pwmWrite(leftmotor, leftSpeed);
+    pwmWrite(rightmotor, rightSpeed);
+
+	int2char(aux,leftSpeed);
+    append(status,aux);
+	int2char(aux,rightSpeed);
+    append(status,aux);
+    write_ackPayload(status);
+
 }

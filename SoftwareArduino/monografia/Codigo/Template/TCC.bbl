@@ -134,16 +134,10 @@ Dispon{\'\i}vel em:
   Acesso em: 05/10/2016.}
 
 \bibitem{ArduSoft}
-\abntrefinfo{Arduino}{ARDUINO}{a}
+\abntrefinfo{Arduino}{ARDUINO}{}
 {ARDUINO.
 Dispon{\'\i}vel em: \url{https://github.com/arduino/Arduino}. Acesso em:
   05/10/2016.}
-
-\bibitem{ArduInfo}
-\abntrefinfo{Arduino}{ARDUINO}{b}
-{ARDUINO.
-Dispon{\'\i}vel em: \url{http://www.arduino.org/products/boards/arduino-uno}.
-  Acesso em: 07/10/2016.}
 
 \bibitem{PL2303}
 \abntrefinfo{Prolific Technology Inc.}{PROLIFIC TECHNOLOGY INC.}{2005}
@@ -152,6 +146,12 @@ Dispon{\'\i}vel em: \url{http://www.arduino.org/products/boards/arduino-uno}.
 [S.l.], 2005. Rev. 1.6. Dispon{\'\i}vel em:
   \url{http://www.electronicaestudio.com/docs/PL2303.pdf}. Acesso em:
   07/10/2016.}
+
+\bibitem{ArduInfo}
+\abntrefinfo{Arduino}{ARDUINO}{}
+{ARDUINO.
+Dispon{\'\i}vel em: \url{http://www.arduino.org/products/boards/arduino-uno}.
+  Acesso em: 07/10/2016.}
 
 \bibitem{battery}
 \abntrefinfo{Baronti et al.}{BARONTI et al.}{2011}
@@ -217,5 +217,11 @@ Citeseer, 2006.}
 \abntrefinfo{Peterson e Brown}{PETERSON; BROWN}{1961}
 {PETERSON, W.~W.; BROWN, D.~T. Cyclic codes for error detection.
 \emph{Proceedings of the IRE}, v.~49, n.~1, p. 228--235, 1961.}
+
+\bibitem{pwm_modulator}
+\abntrefinfo{Brown}{BROWN}{2013}
+{BROWN, W. \emph{Analog Pulse Width Modulation}. 2013.
+Dispon{\'\i}vel em: \url{http://www.ti.com/lit/ug/slau508/slau508.pdf}. Acesso
+  em: 03/04/2017.}
 
 \end{thebibliography}

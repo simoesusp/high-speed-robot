@@ -1,5 +1,5 @@
-\chapter{Embasamento Teórico} %% ou {Método} ???
-\section{Arquitetura Reativa}
+\chapter{Embasamento Teórico}
+\section{Sistemas Reativos}
 \epigraph{ 
 	  \textit{``Representações explícitas e modelos atrapalham. No fim das contas, a melhor representação do mundo é ele mesmo.''} 
 	 }
@@ -11,31 +11,50 @@
 % 	  do mundo é ele mesmo.", Brooks, R.A. 
 % 	  \cite{brooks} \footnote{tradução livre}}
 %   \end{flushright}
-A ideia básica que fundamenta esta arquitetura é de que tudo aquilo conquistado até hoje pelos seres vivos, incluindo a própria racionalidade e 
-inteligência humana, se deu exclusivamente graças às nossas faculdades de percepção, mobilidade e manutenção da própria sobrevivência \cite{brooks}.
-Denominemos agentes primitivos aqueles indivíduos cujos comportamentos se reduziam exclusivamente aos seus instintos de auto-preservação.
-Sendo que, de acordo com \cite{murphy} numa tradução livre, "comportamentos são mapeamentos diretos das informações sensoriais recebidas em um padrão 
-de ações motoras, utilizadas a fim de se cumprir uma tarefa"
 
-Sob esta ótica, temos que estes agentes primitivos desenvolveram novos comportamentos ao longo de seu processo evolutivo, que nada mais é do 
-que uma consequência das faculdades deste indivíduo de se mover e perceber o mundo, de forma que estes novos comportamentos obtidos se relacionam com 
-os demais de três maneiras possíveis.
-A primeira consistiria na reutilzação de outros comportamentos que lhe são ancestrais, o que seria um refinamento do seu proceder: a criação de uma 
-nova camada comportamental que envolve as ancestrais, análogo à constituição de uma pérola.
-O segundo meio seria negando comportamentos antecessores, o que constituiria uma mudança de postura. 
-Enquanto que a última maneira seria a simples criação de uma nova conduta paralela, o que pode ser visto como um comportamento mais avançado que se 
-empilha sobre os demais ao invés de envolvê-los ou negá-los\cite{murphy}.
+\subsection{Paradigma Reativo como Robótica Bioinspirada} 
 
-A noção de que toda ação é fruto de um comportamento alicerça o paradigma reativo.
-Temos portanto que a ação está intimamente ligada à percepção através do comportamento.
-Nesta perspectiva, quando afastamos a mão ao tocarmos uma panela quente, podemos entender que a nossa ação foi consequência de um comportamento que 
-nos impele a distanciarmo-nos de objetos quentes, detectados pelos nossos sensores de calor da pele.
+De acordo com Rodney Brooks \cite{brooks}, para o desenvolvimento da inteligência no seu sentido mais estrito e genuíno, são condições 
+suficientes que o indivíduo, que denominaremos agente, tenha as seguintes faculdades: mobilidade dentro de um ambiente dinâmico no qual esteja 
+inserido, percepção do que se passa nas suas adjacências e, por fim, manutenção da própria sobrevivência.
+Em suma, habilidades como o raciocinar, comunicar-se, gerar conhecimento nada mais são do que comportamentos complexos, consequências simples do fato 
+de existirmos e termos o poder de reagir dentro do meio em que vivemos.
 
-Como consequência desta prerrogativa, a etapa de planejamento existente na tríade 'percepção, planejamento, ação', que sumariza 
-o ciclo de tarefas realizadas por um sistema sob o paradigma hierárquico \cite{murphy,roseli}, pode ser descartada por não ser necessária.
-Em suma, os comportamentos se dão de acordo com o que está acontecendo no ambiente externo, informação obtida através da leitura dos sensores que 
-compõem a percepção do robô.
-Nenhuma modelagem ou representação deste ambiente externo é feita, apenas medições locais e orientadas a comportamentos são adotadas.
+Para aprofundarmos a discussão e esclarecermos como se daria esse processo de aprimoramento dos agentes, é preciso fornecer uma  definição 
+mais rigorosa do termo ``comportamento''.
+Numa tradução livre: ``comportamentos são mapeamentos diretos de informações sensoriais recebidas em  
+padrões de ações motoras, desempenhadas para se cumprir uma tarefa. Matematicamente, seria uma função transferência que transforma dados dos 
+sensores em comandos para os atuadores'' \cite{murphy}.
+
+Nos animais, a transformação de percepção em ação está subordinada à existência de estímulos específicos, de natureza interna ou externa 
+ao agente, que podem ser entendidos como sinais de controle que que permitem ou inibem determinados comportamentos \cite{murphy}.
+A título de ilustração: ao avistar uma presa - informação sensorial - o predador somente a ataca - comportamento - caso esteja com fome - estímulo 
+interno; ou quando afastamos a mão - comportamento - ao tocarmos uma panela quente - a informação sensorial seria a temperatura da panela enquanto o 
+estímulo externo é o fato de que ela excede uma dada temperatura.
+
+Com base em estudos da etologia, o comportamentos dos animais podem ser inatos ou aprendidos, e a sua inteligência pode ser decomposta verticalmente 
+em camadas de comportamentos, cada qual acessa os sensores e atuadores do agente de maneira independente das demais \cite{murphy}.
+Isto é, o indivíduo inicia sua existência com um conjunto comportamentos inatos de autopreservação mas, ao longo da sua vida, outros 
+novos vão surgindo, podendo: refinar comportamentos pré-existentes, negá-los (completamente) ou agregar-se a eles sem produzir conflitos, 
+i.e. trabalhando paralelamente com os que lhe são ancestrais.
+Desta forma, os dois primeiros casos podem ser entendidos como uma reutilização de camadas inferiores da inteligência, enquanto o 
+último consiste na adição de mais uma camada.
+
+\subsection{Características}
+Por estar embasado em ideias da etologia discutidas na seção anterior, o paradigma reativo simplesmente desconsidera a etapa de planejamento 
+existente na tríade 'percepção, planejamento, ação', que sumariza o ciclo de tarefas realizadas por um sistema sob o paradigma hierárquico 
+\cite{murphy,roseli}.
+Em suma, os comportamentos se dão de acordo com o que o agente percebe que está acontecendo no seu entorno, não são feitas modelagens ou 
+representações do ambiente externo, apenas medições locais e orientadas a comportamentos.
+
+Em decorrência da exclusão da etapa de planejamento, robôs desenvolvidos sob o paradigma reativo costumam ser simples e apresentarem 
+respostas rápidas \cite{roseli}.
+Com boas práticas de projeto é possível construir uma robô com: alta coesão, pois comportamentos podem ter acesso direto aos sensores de que 
+necessitam para tomar suas decisões, o que possibilita um alto grau de independência em relação a operações e dados externos entre diferentes módulos 
+ou subsistemas do robô; baixo acoplamento, pois comportamentos são independentes entre si e, portanto, há pouca ou nenhuma dependência de ligações e 
+interfaces externas a um dado módulo \cite{murphy}.
+
+% TODO: \subsection{Arquitetura de Subsumpção}
 
 \section{Arquitetura MOSA}
 
@@ -43,7 +62,8 @@ Arquitetura que propõe dividir o sistema aéreos de navegação autônoma em do
 
 O primeiro constitui a porção crítica do sistema embarcado, i.e. segmento cuja falha pode resultar em ao menos um dos seguintes desastres: morte 
 ou lesão de pessoas; destruição ou danos a propriedades, patrimônios ou equipamentos; danos ambientais \cite{safety}.
-Veículos Aereos Não Tripulados, VANTs, apresentam a tolerância de um erro grave a cada $10^5$ ou $10^9$ horas de voo \cite{hard}, o que as caracteriza 
+Veículos Aéreos Não Tripulados, VANTs, apresentam a tolerância de um erro grave a cada $10^5$ ou $10^9$ horas de voo \cite{hard}, o que as 
+caracteriza 
 como sistemas computacionais de tempo real do tipo \textit{hard}. 
 Maiores esclarecimentos acerca destes jargões podem ser encontrados no apêndice.
 
@@ -58,7 +78,7 @@ da plataforma, responsável pelo cumprimento da missão e por guiar a aeronave a
 %   \caption{MOSA} \label{MOSA}
 %  \end{figure}
 
-No entanto, como a aeronave é o elemento responsável pela garantia da segurança, cabe a ela acatar ou não os comandos do MOSA. Podendo inclusive 
+No entanto, como a aeronave é o elemento responsável pela garantia da segurança, cabe a ela acatar ou não os comandos do MOSA. E pode, inclusive, 
 optar por readaptar a missão em tempo de voo para se ajustar ao cenário, o que inclui a seleção dos sensores que melhor se encaixam na dada 
 conjuntura.
 

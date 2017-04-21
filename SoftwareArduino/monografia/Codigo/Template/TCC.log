@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.5.30)  24 OCT 2016 14:11
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.5.30)  4 APR 2017 09:38
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1156,20 +1156,15 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 ] (./TCC.toc
 
 LaTeX Font Warning: Font shape `T1/lmr/b/it' in size <10> not available
-(Font)              Font shape `T1/lmr/b/sl' tried instead on input line 25.
+(Font)              Font shape `T1/lmr/b/sl' tried instead on input line 27.
 
 
 LaTeX Font Warning: Font shape `T1/lmr/b/it' in size <10.95> not available
-(Font)              Font shape `T1/lmr/b/sl' tried instead on input line 34.
+(Font)              Font shape `T1/lmr/b/sl' tried instead on input line 33.
 
-
-Underfull \vbox (badness 2351) has occurred while \output is active []
-
- [19]
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <12> on input line 55.
-)
-[20] (../Introducao/Introducao.tex)
+(Font)              <12> on input line 54.
+[19]) [20] (../Introducao/Introducao.tex)
 (../EmbasamentoTeorico/EmbasamentoTeorico.tex [21
 
 
@@ -1182,11 +1177,10 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <7> on input line 6.
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <5> on input line 6.
+ [23] [24])
+(../Materiais/Materiais.tex [25] [26
 
-Underfull \vbox (badness 3668) has occurred while \output is active []
-
- [23])
-(../Materiais/Materiais.tex [24]
+]
 LaTeX Font Info:    Try loading font information for OMS+lmr on input line 3.
  (/usr/share/texmf/tex/latex/lm/omslmr.fd
 File: omslmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
@@ -1194,29 +1188,30 @@ File: omslmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 LaTeX Font Info:    Font shape `OMS/lmr/m/n' in size <10.95> not available
 (Font)              Font shape `OMS/lmsy/m/n' tried instead on input line 3.
 
-
 LaTeX Font Warning: Font shape `T1/lmr/b/it' in size <12> not available
-(Font)              Font shape `T1/lmr/b/sl' tried instead on input line 14.
+(Font)              Font shape `T1/lmr/b/sl' tried instead on input line 13.
 
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <9> on input line 15.
-[25
+(Font)              <9> on input line 14.
+[27] [28]
+Underfull \vbox (badness 1590) has occurred while \output is active []
 
-] [26] [27] <../../Imagens/nordicc.png, id=344, 501.875pt x 501.875pt>
+ [29]
+<../../Imagens/nordicc.png, id=357, 501.875pt x 501.875pt>
 File: ../../Imagens/nordicc.png Graphic file (type png)
 
 <use ../../Imagens/nordicc.png>
-Package pdftex.def Info: ../../Imagens/nordicc.png used on input line 137.
+Package pdftex.def Info: ../../Imagens/nordicc.png used on input line 139.
 (pdftex.def)             Requested size: 318.49861pt x 318.51094pt.
- [28] [29 <../../Imagens/nordicc.png>])
-(../Metodos/Metodos.tex [30] [31
+ [30] [31 <../../Imagens/nordicc.png>])
+(../Metodos/Metodos.tex [32] [33
 
-] [32] [33]) (../Resultados/Resultados.tex
-[34]) (../Conclusao/Conclusao.tex [35
+] [34] [35]) (../Resultados/Resultados.tex
+[36]) (../Conclusao/Conclusao.tex [37
 
-] [36
+] [38
 
-]) (./TCC.bbl [37] [38
+]) (./TCC.bbl [39] [40
 
 ]
 
@@ -1224,51 +1219,74 @@ Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
 (hyperref)                removing `\uppercase' on input line 3.
 
 bibitemlist
-[39]) [40]
+[41] [42]) [43] [44
+
+]
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
 (hyperref)                removing `\uppercase' on input line 306.
 
-[41
+[45
 
-
-] [42] (../Apendices/Apendices.tex
-<../../Imagens/RF24_class.png, id=543, 885.3075pt x 1081.03876pt>
+] [46] (../Apendices/Apendices.tex
+<../../Imagens/RF24_class.png, id=553, 885.3075pt x 1081.03876pt>
 File: ../../Imagens/RF24_class.png Graphic file (type png)
 
 <use ../../Imagens/RF24_class.png>
-Package pdftex.def Info: ../../Imagens/RF24_class.png used on input line 58.
+Package pdftex.def Info: ../../Imagens/RF24_class.png used on input line 6.
 (pdftex.def)             Requested size: 455.0pt x 555.59476pt.
- [43
 
-]
-<../../Imagens/WBS.png, id=550, 2318.6625pt x 2570.60374pt>
+<../../Imagens/WBS.png, id=554, 2318.6625pt x 2570.60374pt>
 File: ../../Imagens/WBS.png Graphic file (type png)
 
 <use ../../Imagens/WBS.png>
-Package pdftex.def Info: ../../Imagens/WBS.png used on input line 66.
+Package pdftex.def Info: ../../Imagens/WBS.png used on input line 14.
 (pdftex.def)             Requested size: 455.0pt x 504.42326pt.
 
-<../../Imagens/robot_schem.png, id=551, 716.276pt x 512.314pt>
+Underfull \vbox (badness 7540) has occurred while \output is active []
+
+ [47
+
+ <../../Imagens/RF24_class.png>]
+<../../Imagens/robot_schem.png, id=560, 716.276pt x 512.314pt>
 File: ../../Imagens/robot_schem.png Graphic file (type png)
 
 <use ../../Imagens/robot_schem.png>
-Package pdftex.def Info: ../../Imagens/robot_schem.png used on input line 74.
+Package pdftex.def Info: ../../Imagens/robot_schem.png used on input line 22.
 (pdftex.def)             Requested size: 455.0pt x 325.44084pt.
 
-<../../Imagens/ObstAvoid.png, id=552, 551.05875pt x 923.45pt>
+<../../Imagens/ObstAvoid.png, id=561, 551.05875pt x 923.45pt>
 File: ../../Imagens/ObstAvoid.png Graphic file (type png)
 
 <use ../../Imagens/ObstAvoid.png>
-Package pdftex.def Info: ../../Imagens/ObstAvoid.png used on input line 128.
+Package pdftex.def Info: ../../Imagens/ObstAvoid.png used on input line 139.
 (pdftex.def)             Requested size: 364.00139pt x 610.00024pt.
- [44]) (../Anexos/Anexos.tex [45 <../../Imagens/RF24_class.png>] [46 <../../Ima
-gens/WBS.png>] [47 <../../Imagens/robot_schem.png>] [48 <../../Imagens/ObstAvoi
-d.png>]) 
-AED: lastpage setting LastPage
-[49
 
-]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [48 <../../Imagens/WBS.png>]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [49 <../../Imagens/robot_schem.png>] [50]
+Underfull \vbox (badness 4479) has occurred while \output is active []
+
+ [51 <../../Imagens/ObstAvoid.png>]
+<../../Imagens/PWM_modulation_types.png, id=591, 1505.625pt x 1053.9375pt>
+File: ../../Imagens/PWM_modulation_types.png Graphic file (type png)
+
+<use ../../Imagens/PWM_modulation_types.png>
+Package pdftex.def Info: ../../Imagens/PWM_modulation_types.png used on input l
+ine 200.
+(pdftex.def)             Requested size: 318.49861pt x 222.94159pt.
+) (../Anexos/Anexos.tex
+Underfull \vbox (badness 2318) has occurred while \output is active []
+
+ [52 <../../Imagens/PWM_modulation_types.png (PNG copy)>] [53] [54
+
+])
+
+AED: lastpage setting LastPage
+[55]
 \tf@lof=\write5
 \openout5 = `TCC.lof'.
 
@@ -1290,13 +1308,13 @@ LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 327.
  ) 
 Here is how much of TeX's memory you used:
- 13565 strings out of 494929
- 198118 string characters out of 6180142
- 368450 words of memory out of 5000000
- 16250 multiletter control sequences out of 15000+600000
- 113207 words of font info for 146 fonts, out of 8000000 for 9000
+ 13587 strings out of 494929
+ 198527 string characters out of 6180142
+ 368892 words of memory out of 5000000
+ 16259 multiletter control sequences out of 15000+600000
+ 113550 words of font info for 149 fonts, out of 8000000 for 9000
  16 hyphenation exceptions out of 8191
- 45i,13n,35p,444b,602s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 45i,13n,35p,433b,619s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/en
 c/dvips/lm/lm-mathsy.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-ec.enc}{/usr/s
 hare/texmf/fonts/enc/dvips/lm/lm-rm.enc}</usr/share/texmf/fonts/type1/public/lm
@@ -1310,10 +1328,10 @@ are/texmf/fonts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/public/l
 m/lmr9.pfb></usr/share/texmf/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf
 /fonts/type1/public/lm/lmri9.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10
 .pfb></usr/share/texmf/fonts/type1/public/lm/lmsy8.pfb>
-Output written on TCC.pdf (51 pages, 1168017 bytes).
+Output written on TCC.pdf (57 pages, 1269197 bytes).
 PDF statistics:
- 878 PDF objects out of 1000 (max. 8388607)
- 794 compressed objects within 8 object streams
- 216 named destinations out of 1000 (max. 500000)
- 32794 words of extra memory for PDF output out of 35830 (max. 10000000)
+ 911 PDF objects out of 1000 (max. 8388607)
+ 819 compressed objects within 9 object streams
+ 222 named destinations out of 1000 (max. 500000)
+ 32791 words of extra memory for PDF output out of 35830 (max. 10000000)
 

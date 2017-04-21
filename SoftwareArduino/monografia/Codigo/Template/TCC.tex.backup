@@ -1,5 +1,5 @@
  \documentclass[
- 	11pt,% tamanho da fonte
+  	11pt,% tamanho da fonte
  	openright,% capítulos começam em pág ímpar (insere página vazia caso preciso)
  	twoside,% para impressão em verso e anverso. Oposto a oneside
  	a4paper,% tamanho do papel. 
@@ -94,7 +94,7 @@ Departamento de Engenharia Elétrica e de Computação}
 		pdfauthor={\@author},
     	pdfsubject={\imprimirpreambulo},
 	    pdfcreator={LaTeX with abnTeX2},
-		pdfkeywords={abnt}{latex}{abntex}{abntex2}{trabalho acadêmico}, % TODO colocar as keywords bonitinho!
+		pdfkeywords={navegação autônoma}{robótica}{sistemas reativos}{desvio de obstáculos}{...?}, % TODO
 		colorlinks=true,       		% false: boxed links; true: colored links
     	linkcolor=blue,          	% color of internal links
     	citecolor=blue,        		% color of links to bibliography
@@ -175,8 +175,8 @@ Departamento de Engenharia Elétrica e de Computação}
 \begin{agradecimentos}
 Eu gostaria de agradecer à comunidade que vive o paradigma revolucionário de disseminação livre e gratuita de ideias e trabalhos.
 Este projeto é um fruto tímido de uma árvore regada pelos esforços de cada uma destas pessoas que, de gota em gota, clareiam as águas 
-turvadas pelo egoísmo e amparam a germinação de verdadeiros pomares.
-Quem sabe um dia o único obstáculo ao aprendizado e construção do conhecimento seja a força de vontade...
+turvadas pelo egoísmo e nutrem a germinação de verdadeiros pomares que estão por vir. Quem sabe um dia o único obstáculo ao aprendizado e construção 
+do conhecimento seja a força de vontade...
 \end{agradecimentos}
 % ---
 

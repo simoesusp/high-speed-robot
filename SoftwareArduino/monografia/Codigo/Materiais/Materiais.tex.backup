@@ -2,27 +2,29 @@
 \begin{itemize} %% TODO: colocar as rodas: http://www.hobbyking.com/hobbyking/store/__2176__598__Hardware_Accessories-Wheels_0_40mm.html
  \item 5 sensores ultrassônicos de distância HC-SR04
  \item 2 motores \textit{brushless outrunner} Turnigy D2836/9 950KV
- \item 2 \textit{Electronic Speed Controlers (ESCs) Hobby King} com UBEC de 5.5V/4A: um de 35A e outro de 40A 
+ \item 2 ESCs Hobby King com UBEC de 5.5V/4A: um de 35A e outro de 40A 
  \item 2 módulos de rádio frequência baseados no \textit{transceiver} Nordic nRF24L01+ 
  \item bateria LiPo 30C de 2800 mAh
- \item 1 Arduino Uno
- \item 1 Arduino Pro Mini
+ \item 2 Arduino Pro Mini
  \item 1 Conversor/Adaptador USB-Serial PL2303
- \item 1 Carregador IMAX B6-AC
+ \item 1 Carregador balanceador de bateria IMAX B6-AC
 \end{itemize}
 
 \section{Motor \textit{Brushless}}
 São motores síncronos\footnote{Motores Síncronos: o campo magnético girante do rotor e do estator têm a mesma frequência.} de corrente contínua cuja 
 comutação é feita eletronicamente e não mecanicamente por meio de escovas como nos motores CC comuns, por isso denominados \textit{brushless}.
 Possui aplicações nas indústrias de automóveis, aeroespacial, médica, de equipamentos de automação industrial e instrumentação .
-Os motores BLDC apresentam algumas vantagens em relação aos de corrente contínua comutados e de indução no que concerne a: resposta dinâmica, ruídos 
+Os motores BLDC apresentam algumas vantagens em relação aos de corrente contínua com escovas e de indução no que concerne a: resposta 
+dinâmica, ruídos 
 de operação, durabilidade (i.e. vida útil), assim como razão do torque pelas dimensões do motor \cite{motor_2}. 
 
-O seu rotor consiste de um imã permanente, enquanto seu estator apresenta pólos formados por enrolamentos. Como é preciso que os enrolamentos sejam 
-energizados na sequência correta para que um campo magnético girante seja criado de modo a produzir o maior torque. Nas máquinas CC isto é feito 
-mecanicamente através das escovas, mas no caso do BLDC é preciso que a posição do rotor em relação ao estator seja conhecida para que então se faça o 
-acionamento na ordem correta. Existem dois meios de se obter esta informação: sensores de efeito hall, método empregado neste trabalho, ou 
-processamento da força contra eletromotriz dos enrolamentos do estator.
+% TODO tava uma merda, reler pois alterei um pouco
+O rotor consiste de um imã permanente, já os pólos do estator são formados por enrolamentos, que precisam ser energizados na sequência correta 
+para que um campo magnético girante seja criado.
+Nas máquinas CC isto é feito mecanicamente através das escovas mas, no caso do BLDC, é preciso que a posição do rotor em relação ao estator seja 
+conhecida para que seja possível fazer o acionamento correta das bobinas 
+Existem dois meios de se obter esta informação: através de sensores de efeito hall, método empregado neste trabalho, ou processamento da força contra 
+eletromotriz das bobinas do estator.
 
 Sensores de efeito Hall são transdutores analógicos que relacionam a intensidade do campo magnético externo transversalmente disposto a ele em termos 
 de tensão elétrica. Quando associado a um circuito comparador \textit{schmitt trigger}, comporta-se como um sensor digital que aponta quando a 
@@ -110,22 +112,22 @@ são variáveis com a frequência e do tipo de radiação, acústica ou eletroma
 Existem outros problemas relativos ao ambiente alvo que não são relacionados à absorção ou transmissão da radiação, mas à reflexão serão tratados nas 
 seções subsequentes separadamente.
 
-\subsubsection{Foreshortening}
+\subsubsection{\textit{Foreshortening}}
 Como a direticionalidade dos sensores ultrassônicos é baixa, isto é a largura de feixe do lobo central é alta, aproximadamente $30^o$, quando o alvo 
 a ser detectado não está perpendicularmente posicionado em relação ao eixo acústico do sensor, o cone que formado pelo lobo principal atinge o objeto 
 em instantes diferentes. Consequentemente, retorna ao sensor em instantes diferentes provocando um desvio na leitura da distância, fazendo com que o 
 obstáculo pareça estar mais próximo do que está na realidade. Por isso este problema é denominado \textit{foreshortening}
 
-\subsubsection{Reflexão especular}
-Dentro desta mesma situação em que o obstáculo não está perpendicular ao eixo acústico do sonar, existe a possibilidade de que a onda emitida seja 
-refletida de tal forma que não retorne ao sensor, caso este em que o obstáculo não é percebido. Outra hipótese é de que esta onda refletida 
-para longe do sensor atinja outra(s) superfície(s) até que retorne ao sensor, desta forma a medida obtida indica que o alvo encontra-se mais distante 
-do que realmente está \cite{roseli,siegwart,everett}.  
+\subsubsection{Reflexão especular e \textit{Crosstalk}}
+Analisando ainda a situação em que o obstáculo não está perpendicular ao eixo acústico do sonar, tems que a onda emitida pode ser refletida de tal 
+forma que não retorne ao sensor, caso este em que o obstáculo não é percebido; outra possibilidade é de que esta onda atinja outras superfícies até 
+que por fim retorne ao sensor, desta forma a medida obtida indica que o alvo encontra-se mais distante do que realmente está, fenômeno denominado 
+reflexão especular \cite{roseli,siegwart,everett}.  
 
-\subsubsection{Crosstalk}
-Quando utiliza-se uma matriz de sensores ultrassônicos, o problema da relexão especular é agravado, pois pode constituir interferência entre 
-sensores. De modo que além da medida feita estar errada, o posicionamento do obstáculo será também errôneo \cite{murphy}. No entanto, diferentemente 
-da reflexão especular, este problema pode ser amenizado de diferentes maneiras, vide \cite{2016_artigo_1,2016_artigo_5}
+Quando utiliza-se uma matriz de sonares, este problema é agravado, pois pode provocar interferência entre sensores ou, do inglês, \textit{crosstalk}.
+De modo que além da medida obtida estar errada, o posicionamento estimado do obstáculo será também errôneo \cite{murphy}, afinal pressupõe-se que o 
+sinal de \textit{echo} é oriundo do pulso de ondas emitido pelo próprio dispositivo.
+No entanto, diferentemente da reflexão especular, este problema pode ser amenizado de diferentes maneiras, vide \cite{2016_artigo_1,2016_artigo_5}.
 
 \subsubsection{Tempo de Resposta} %% TODO:
 
@@ -154,20 +156,22 @@ canais.}
  \item Pinos de entrada tolerantes a até 5V
  \item 
 Pacotes recebidos verificados automaticamente , certificando-se da validade do endereço apontado e legitimando a integridade 
-do pacote via CRC(\textit{Cyclic Redundancy Check}) antes de serem movidos às filas de dados recebidos (\textit{RX FIFO}) \cite{nRF}.
+do pacote via CRC(\textit{Cyclic Redundancy Check}) \footnote{Vide apêndice para uma breve explanação sobre CRC}, antes de 
+serem movidos às filas de dados recebidos (\textit{RX FIFO})
  \item Receptor envia ao transmissor um pacote de confirmação de recepção dos dados pelo mesmo canal (\textit{acknowledgment packet}).
 \end{itemize}
 
 \section{Arduino}
-\subsection{Arduino Uno}
 Trata-se de uma plataforma de prototipação eletrônica aberta, i.e. \textit{open-source hardware}, baseada no microcontrolador de 8 bits da Atmel 
-ATMega328P \cite{ATMega}, programável via USB ou serial (ICSP) através de um microcomputador, por exemplo, por meio do ambiente de desenvolvimento 
+ATMega328 \cite{ATMega}, programável via serial (ICSP) através de um microcomputador, por exemplo, por meio do ambiente de desenvolvimento 
 \textit{Arduino Software IDE}, \textit{open-source software} e encontra-se no GitHub \cite{ArduSoft}.
+Para programar este dispositivo, foi utilizado um módulo baseado na ponte USB-Serial PL-2303, cuja descrição detalhada pode ser encontrada em 
+\cite{PL2303}.
+
 Algumas informações técnicas \cite{ArduInfo} de interesse estão listadas abaixo: 
 \begin{itemize}
- \item Dimensões: 53.4mm x 68.6mm
- \item Tensão de alimentação recomendável: 7V - 12V
- \item Fonte de tensão de 3,3V embutida
+ \item Dimensões: 17,78mm x 33mm
+ \item Tensão de alimentação recomendável: 5V - 12V
  \item Memória 
  \begin{itemize}
   \item Flash: 32kB 
@@ -180,12 +184,6 @@ Algumas informações técnicas \cite{ArduInfo} de interesse estão listadas aba
  \item \textit{clock} de 16MHz
 \end{itemize}
 
-\subsection{Arduino Pro Mini} % TODO
-Apresenta especificações análogas às do Arduino Uno, porém com a desvantagem de não ser programável via USB.
-No entanto apresenta uma compliância maior da tensão de alimentação recomendável, 5V - 12V, e dimensões reduzidas, 17,78mm x 33mm.
-O microcontrolador utilizado nesta placa é o ATMega328, cuja descrição também pode ser encontrada em \cite{ATMega}.
-Para programar este dispositivo, foi utilizado um módulo baseado na ponte USB-Serial PL-2303, cuja descrição detalhada pode ser encontrada em 
-\cite{PL2303}.
 
 \section{Bateria} % TODO
 Baterias do tipo LiPo são uma das mais indicadas para veículos elétricos e híbridos, tanto quanto para equipamentos eletrônicos portáteis; no 

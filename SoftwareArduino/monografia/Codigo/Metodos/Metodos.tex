@@ -1,46 +1,52 @@
 \chapter{Método}
-
 \section{Estratégia \textit{bottom-up}}
-A estratégia gerencial e organizacional \textit{bottom-up} foi utilizada no desenvolvimento do projeto. 
-Em função da natureza modular e orientada a comportamentos da arquitetura reativa \cite{murphy}, a adoção deste método de gerenciamento é quase que 
+A estratégia gerencial e organizacional \textit{bottom-up} foi utilizada no desenvolvimento deste projeto. 
+Em função da natureza modular e orientada a comportamentos de arquiteturas reativas \cite{murphy}, a adoção deste método de gerenciamento é quase que 
 uma escolha natural.
-O robô foi dividido em quatro subsistemas, desenvolvidos e testados separadamente: percepção, locomoção, comunicação e navegação (que no caso deste 
-projeto consiste no desvio de obstáculos em si). %% TODO citar a arq MOSA aqui pra falar do planejamento??
+O robô foi dividido em quatro subsistemas, desenvolvidos e testados separadamente: percepção, locomoção, comunicação e navegação (que, no caso deste 
+projeto, consiste no desvio de obstáculos em si). %% TODO citar a arq MOSA aqui pra falar do planejamento??
 Nesta fase de implementação,  boas práticas de engenharia de software foram tidas como prioridade, buscando uma implementação que 
-apresente baixo acoplamento \footnote{Acoplamento: grau de dependência de ligações e interface externas a um dado módulo} e alta 
-coesão\footnote{Coesão: grau de independência em relação a operações e dados externos a um dado módulo} \cite{murphy} com a expectativa de 
-desenvolver um código que possa ser facilmente entendido e reutilizado.
-Em seguida se deu a etapa de integração das partes para a posteriori serem feitos testes no conjunto, conforme ilustra o diagrama \ref{WBS}:
+apresente baixo acoplamento  e alta coesão com a expectativa de desenvolver um código que possa ser facilmente entendido e reutilizado em futuros 
+trabalhos afins.
+Em seguida se deu a etapa de integração das partes para, a posteriori, serem feitos testes no conjunto, conforme ilustra o diagrama \ref{WBS}:
 
-\section{Arquitetura Reativa} %% TODO: citar as vantagens pra explicar o pq da utilização.
+\section{Arquitetura Reativa} 
+% creio não termos implementado uma arquitetura de subsumpção pq o robô apresenta estados internos, como transmissão via RF dos USS quando em modo de 
+% navegação e o fato de poder andar caso haja mensagem informando que o SB foi acionado até 500ms antes. 
+
 Optou-se por uma arquitetura de controle fortemente baseada nas informações sensoriais, sem delongas em processamento de sinal para ajustar os dados 
-dos sensores ultrassônicos a um conjunto de regras ou a um modelo de mundo preconcebido. 
-A razão dessa escolha é decorrência da necessidade de uma resposta rápida do sistema, vantagem da arquitetura reativa em função da sua 
-simplicidade \cite{roseli}.
+dos sensores a um modelo ou representação de mundo preconcebido. 
+A razão dessa escolha é decorrência da necessidade de uma resposta rápida do sistema, vantagem da arquitetura reativa em função da sua simplicidade 
+\cite{roseli}.
 
-A latência inerente na obtenção dos dados dos sonares \cite{jones} associada à alta velocidade de operação do robô é a causa desta restrição 
-temporal.
+A latência inerente à obtenção dos dados dos sonares \cite{jones} associada à alta velocidade de operação do robô é a causa desta restrição 
+temporal. % TODO não gostei da palavra temporal nesse contexto
 Como é imprescindível colher dados do ambiente externo a uma taxa que dê um panorama atualizado do que está se passando ao redor do robô 
 \cite{brooks}, reduzir o tempo de resposta do sistema possibilita que o desvio de obstáculos ocorra de maneira mais suave.
 Haja vista que se a detecção for feita com antecedência, medidas menos bruscas podem ser adotadas; em contraste com o caso em que a latência é alta a 
 ponto de que percepção das barreiras no caminho se dê na proximidade do veículo.
 
+Os comportamentos implementados no robô se restringem às diferentes manobras de evasão, adotadas com base na proximidade de obstáculos dos cinco 
+sensores, vide \ref{IA}. Os estímulos reguladores consistem na recepção, via RF, de um comando que incite o robô a navegar e do aval mediante 
+recebimento de uma mensagem nos últimos 500ms informando se o botão de segurança foi acionado.
+%TODO: as demais funções implementadas podem ser vistas como comportamentos???
+
 \section{Subsistema de Locomoção}
-Numa visão geral, temos que o Arduino Uno é responsável por emitir o sinal de controle, modulado em largura de pulso, ao ESC.
+Numa visão geral, temos que o Arduino é responsável por emitir um sinal de controle, modulado em largura de pulso, ao ESC.
 Este, por sua vez, é incumbido de energizar os devidos enrolamentos do estator a fim de que o motor BLDC atinja, o mais breve possível, a velocidade 
-desejada, expressa no sinal de controle. 
+desejada, expressa pelo sinal de controle. 
 Resumidamente: o Arduino comanda, o ESC acata a ordem e conduz o motor a cumprí-la utilizando os recursos da bateria.
+O robô apresenta tração dianteira e os motores estão fixos no chassi, logo, faz curvas quando há diferença de velocidade entre os motores.
 
 O código fonte responsável pela produção do pulso PWM nas portas do Arduino foi desenvolvido por Sam Knight e disponibilizado ao público para 
 utilização e modificações de qualquer natureza.
 Esta biblioteca, denominada PWM, pode ser encontrada no GitHub \cite{pwm_lib}.
 
-O robô apresenta tração dianteira, logo, faz curvas quando há diferença de velocidade entre os motores.
 %% TODO: terminar isso aqui...
 
 \section{Subsistema de Percepção}
 O \textit{software} que manipula os sensores ultrassônicos foi aperfeiçoado aos poucos.
-Primeiramente, buscou-se fazer o dispositivo funcionar, utilizando funções prontas, e não otimizadas, de bibliotecas do Arduino.
+Primeiramente, buscou-se fazer o dispositivo funcionar, utilizando funções prontas e, portanto, não otimizadas de bibliotecas do Arduino.
 Em seguida, foi construída a matriz de sensores que, conforme a Fig. \ref{fritzing}, tem o pino de \textit{trigger} comum a todos sonares; no 
 entanto, a priori, a leitura dos sonares era feita sequencialmente utilizando o código citado.
 O próximo passo, naturalmente, foi fazer com que os cinco sensores fossem lidos paralelamente, aproveitando o fato de todos dispararem juntos, a fim 
@@ -49,65 +55,42 @@ de minimizar o tempo de resposta na leitura da matriz.
 Foram feitos testes mais rigorosos nessa última configuração com o objetivo de certificar se há de fato a necessidade de estipular um intervalo 
 mínimo entre leituras sucessivas dos sonares ou se seria possível que esta latência fosse dinâmica, atrelada ao sensor cujo obstáculo encontra-se mais 
 distante.
-Em suma, buscou verificar se ciclos de leitura menores do que os 60ms sugeridos em \cite{HC-SR04} ocasionam aumento na incidência de erros de 
-medidas. 
-Os detalhes acerca destes testes constam na seção de resultados.
+Em suma, foi verificado se ciclos de leitura menores do que os 60ms sugeridos em \cite{HC-SR04} realmente ocasionam aumento na incidência de erros 
+nas medidas; os detalhes acerca destes testes constam na seção de resultados.
 
-A decisão de disparar todos os sonares simultaneamente foi feita com o intuito de reduzir o número de portas utilizadas no Arduino Uno e aumentar 
-a taxa de obtenção dos dados, i.e. a largura de banda, conforme a terminologia adotada  em \cite{roseli}.
+A decisão de disparar todos os sonares simultaneamente foi feita com o intuito de reduzir o número de portas utilizadas no Arduino, assim como 
+aumentar a taxa de obtenção dos dados, i.e. a largura de banda, conforme a terminologia adotada  em \cite{roseli}.
 No entanto, as consequências desta deliberação são  severas: agravamento dos fenômenos de \textit{foreshortening} e \textit{crosstalk} 
 \cite{2016_artigo_5}. %% TODO: tira o foreshortening daqui??
 
-
 \section{Subsistema de Comunicação}
-Este segmento teve como alicerce a biblioteca denominada RF24, diponível em \cite{nrf_lib}, responsável por todo o controle em mais baixo nível do 
+Este segmento teve como alicerce a biblioteca denominada RF24, diponível em \cite{nrf_lib}, responsável por todo o controle em baixo nível do 
 \textit{transceiver} nRF24L01+.
 Foi implementada em C++ e consiste numa única classe, RF24 (vide Fig.\ref{RF24_ClassDiag}), que provê acesso às funcionalidades básicas do 
-\textit{transceiver} 
-como controle da potência de transmissão do sinal, escolha do canal a ser usado tanto quanto funções que permitem enviar dados por um canal 
-previamente aberto assim como ler as informações recebidas nos canais em que o dispositivo se comporta como receptor; a documentação completa da 
-classe pode ser encontrada em \cite{RF24_class_doc}.
-Assim como todos os códigos de terceiros e programas utilizados nesse projeto, sua utilização é aberta ao público gratuitamente.
+\textit{transceiver} como controle da potência de transmissão do sinal, escolha do canal a ser utilizado, tanto quanto funções que permitem enviar 
+dados por um canal previamente aberto, ler dos canais em que o dispositivo se comporta como receptor; a documentação completa da classe pode ser 
+encontrada em \cite{RF24_class_doc}.
+Assim como todos os códigos de terceiros e programas utilizados nesse projeto, sua utilização é aberta ao público gratuitamente, conforme os termos 
+de uso.
 
 Na definição do escopo do projeto, o papel do módulo de radiofrequência seria de simplesmente garantir a segurança e integridade do robô.
 Neste caso, uma comunicação \textit{simplex} seria suficiente para cumprir a tarefa.
-O módulo transmissor, que constitui o acionador remoto, foi ligado ao Arduino Pro Mini, que enviava ao robô o nível lógico lido pelo botão de 
-segurança.
-O \textit{transceiver} do robô assumia o papel de receptor e enviava os dados recebidos por comunicação serial ao Arduino Uno, que parava os motores 
-caso a mensagem indicasse que o botão estava desligado ou se nenhum pacote fosse detectado num período pré-determinado de 1 segundo.
+O módulo transmissor, localizado no acionador remoto, enviava ao robô o nível lógico lido do botão de segurança.
+O \textit{transceiver} do robô assumia o papel de receptor e enviava os dados recebidos por comunicação serial ao Arduino, que ordenava a parada dos 
+motores caso a mensagem indicasse que o botão estava desligado ou se nenhum pacote fosse detectado num período pré-determinado de 1 segundo.
 
-No entanto, após concluir o sistema de acionamento sem fio concebeu-se a ideia de sofisticar a utilização do módulo de radiofrequência, implementando 
-uma interface de comando capaz de alterar e supervisionar os parâmetros e dados sensoriais do robô.
-Logo, ao adicionar essa funcionalidade surge a necessidade de que ambas partes, i.e. robô e sistema de controle remoto, possam receber e enviar 
+No entanto, após concluir o sistema de acionamento sem fio, concebeu-se a ideia de sofisticar a utilização do módulo de radiofrequência, 
+implementando uma interface de comando capaz de alterar e supervisionar os parâmetros e dados sensoriais do robô, com o intuito de facilitar a etapa 
+de testes com o veículo em movimento, objetivando evitar ao máximo a necessidade de reprogramá-lo.
+
+Ao adicionar essa funcionalidade, surge a necessidade de que ambas partes, i.e. robô e sistema de controle remoto, possam receber e enviar 
 informações um ao outro.
-O \textit{transceiver} utilizado neste projeto tem a funcionalidade de estabelecer comunicação \textit{half-duplex} para cada canal, i.e. 
-bidirecional mas não simultaneamente, pois o receptor pode inserir dados no pacote de confirmação de recepção, \textit{acknowledgment packet} 
-\cite{nRF}.
+Como o \textit{transceiver} utilizado tem a funcionalidade de estabelecer comunicação \textit{half-duplex} para cada canal, i.e. bidirecional mas não 
+simultaneamente, pois o receptor pode inserir dados no pacote de confirmação de recepção, \textit{acknowledgment packet} \cite{nRF}, e a biblioteca 
+RF24 apresenta funções prontas que facilitam o emprego deste recurso, foi possível adicionar essa funcionalidade ao projeto sem a necessidade de 
+utilizar dois canais de comunicação.
 
-Contudo, o número de \textit{bytes} disponibilizados ao receptor para incorporar sua mensagem no pacote de confirmação não atinge a metade do que o 
-transmissor pode enviar.
-Além disso, os dados a serem integrados no \textit{acknowledgment packet} precisam ser decididos antes do recebimento do pacote do transmissor, ou 
-seja, a informação que o receptor envia ao transmissor é resposta ao pacote enviado anteriormente, e não ao mais atual.
-Por causa destes pormenores, optou-se por ignorar essa ferramenta do módulo e implementar uma comunicação através de dois canais, de tal forma que 
-o dispositivo transmissor em um canal é receptor no outro, e vice versa.
-
-A ideia inicial concebida de como estabelecer essa interface de comunicação propunha que cada uma das partes deveria transmitir e enviar uma mensagem 
-a cada iteração de modo bloqueante, ou seja, não poderia haver mudança de estado antes do cumprimento da sua respectiva incumbência.
-Isto é, podemos entender como uma máquina de dois estados, transmissão e recepção, que faz transição entre estes somente quando recebe o pacote de 
-notificação de entrega e quando recebe uma mensagem, respectivamente. 
-No entanto, esta ideia teve de ser reformulada em função do recorrente surgimento de impasses (\textit{deadlocks}): ambos elementos tentavam 
-transmitir ou receber ao mesmo tempo, de modo que ficavam presos nesta condição pois um aguardava que o outro mudasse de estado.
-Algumas hipóteses foram formuladas para tentar explicar esse fenômeno, mas sem conclusões cabais, de modo que não serão detalhadas nesse documento.
-
-Para contornar este empecilho, implementou-se uma rotina de tratamento de impasses que gera um número pseudo-aleatório entre dois valores 
-pré-estabelecidos que, caso seja par implica que o módulo deve inverter o seu estado, e.g. se estiver transmitindo, passa a receber; caso seja 
-ímpar, o número em questão corresponde ao intervalo máximo, em milissegundos, que o dispositivo deve permanecer no estado em que se encontra antes de 
-retornar a esta função, no caso de não conseguir estabelecer o contato.
-Toda vez que essa rotina é acionada, aumenta-se o intervalo que delimita o número aleatório gerado em valor fixo pré determinado.
-
-A interface de comando foi desenvolvida com o intuito de facilitar a etapa de testes com o robô em movimento, objetivando evitar ao máximo a 
-necessidade de reprogramá-lo. Para isso, as seguintes funcionalidades foram implementadas:
-
+A interface de comando implementada abrange as seguintes funções:
 \begin{itemize}
  \item 
 Ajustar a frequência do PWM de cada um dos motores.
@@ -127,21 +110,48 @@ controlador remoto com o robô parado.
 \end{itemize}
 
 
-\section{Subsistema de Navegação}
-Tal qual \cite{Artigo_3}, a área coberta por um sensor ultrassônico foi dividida em três regiões: distante, próxima e perigo.
-Quando a leitura de todos os sonares indica região distante, i.e. obstáculos distam mais do que 3 metros de um dado sensor, considera-se que o robô 
+\section{Subsistema de Navegação} % TODO subsistema ou estratégia de desvio de obstáculos?
+Consiste na inteligência  do robô, isto é, trata-se do conjunto de comportamentos adotados pelo veículo, através dos quais ele é capaz de 
+desempenhar sua função de desvio de obstáculos. % TODO é realmente necessário falar isso?
+Tal qual \cite{Artigo_3}, a área coberta por um dado sensor ultrassônico foi dividida em três regiões: distante, próxima e perigo.
+Quando a leitura de todos os sonares indica região distante, i.e. obstáculos distam mais do que 3 metros, considera-se que o robô 
 está seguro e pode andar em velocidade máxima; em futuros trabalhos, corresponderá à situação em que o controle do veículo é cedido ao MOSA.
-Caso a medida de algum dos sensores seja menor do que 1 metro, o que corresponde à região de perigo, entende-se que o robô está na iminência de uma 
-colisão e que deve, portanto, freiar imediatamente.
+Caso a medida de algum dos sensores seja menor do que 1 metro - região de perigo - entende-se que o robô está na iminência de uma colisão e deve 
+freiar imediatamente.
 Quando nenhuma destas situações citadas ocorre, isto é, nenhum dos sonares da matriz está na região de perigo, mas há ao menos um deles que não está 
-na região distante, e sim na região próxima, entende-se que há um obstáculo passível de ser contornado.
+na região distante, por conseguinte na região próxima, entende-se que há um obstáculo passível de ser contornado.
 
-A estratégia de desvio de obstáculos é semelhante à desenvolvida em \cite{Artigo_1}, define comportamentos bem simples e diretos, garantindo rapidez 
-de resposta uma vez que as leituras dos sensores já foram feitas, vide Fig. \ref{ObstAvoid}.
+A estratégia de desvio de obstáculos é semelhante à desenvolvida em \cite{Artigo_1}, define comportamentos bem simples e diretos, como atos reflexos 
+nos animais, garantindo rapidez de resposta uma vez que as leituras dos sensores já foram feitas, vide Fig. \ref{ObstAvoid}.
 Analisa-se cada um dos cinco sonares quanto à região em que se encontra a barreira identificada: 0, para região distante e 1, próxima;
 cada uma das 32 combinações possíveis apresenta um comportamento correspondente: seguir em frente, fazer uma curva aberta, moderada ou brusca.
 Na Tabela \ref{IA} utiliza-se \textquoteleft E\textquoteright{} e  \textquoteleft D\textquoteright{} para designar curvas à esquerda e direita, 
 respectivamente; enquanto os índices \textquoteleft L\textquoteright{},  \textquoteleft M\textquoteright{} e \textquoteleft F\textquoteright{} 
-caracterizam o quão acentuada vai ser a curva: leve, moderada ou fortemente.
+caracterizam o quão acentuada vai ser a curva: leve, moderada ou fortemente. % tirar isso daqui e colocar legenda na tabela. 
 
 \section{Integração dos Subsistemas}
+Assim que todos os subsistemas foram implementados, testados e operavam isoladamente de maneira satisfatória, foram feitos testes no conjunto, que 
+indicaram novos problemas a serem tratados. 
+A maioria deles de ordem prática e facilmente contornáveis, no entanto um é digno de nota, pois implicou em uma mudança na disposição física do 
+veículo.
+
+Nos testes feitos, em determinadas condições o robô ia de encontro ao obstáculo ao invés de efetuar o desvio. 
+Após serem analisados os dados dos sensores nessas circunstâncias, notou-se a existência de ruídos em sensores específicos, que causavam a adoção de 
+comportamentos errados.
+
+Ao perceber o problema, novos testes foram engendrados a fim de descobrir a sua natureza. 
+As hipóteses concebidas eram as seguintes: \textit{crosstalk}, curto circuito entre pinos do Arduino, falha na lógica do \textit{software} ou 
+interferência dos motores nos sensores.
+
+Para eliminar a possibilidade de que uma das portas da placa de prototipação estivesse interferindo na outra de alguma maneira, mudou-se a 
+ligação dos sensores ultrassônicos e o problema se manteve.
+O mesmo foi feito no \textit{software}, i.e. foi alterada a disposição dos sensores ultrassônicos no código. 
+Especificamente falando, foram trocados os parâmetros que correlacionam a ligação física do pino de \textit{echo} dos dispositivos à sua variável 
+correspondente na matriz de estruturas do tipo \textit{sensor\_t}, denominada no programa por USS, e, mais uma vez, o defeito persistiu.
+Adicionalmente a essa modificação no \textit{software}, foram feitas medições com os motores desligados, nas quais a falha em questão não ocorreu, 
+evidenciando que a natureza do problema não era do código.
+
+O último teste realizado consistiu em afastar os sensores ultrassônicos dos motores, o que resultou na desaparição das leituras espúrias, confirmando 
+a hipótese de que os BLDC causavam a distorção na percepção do robô.
+Para sanar essa questão, optou-se por erguer os sensores a uma altura na qual não houvesse interferência suficiente a ponto de provocar erros de 
+medição.

@@ -334,3 +334,23 @@
   year={2006},
   publisher={Citeseer}
 }
+
+@article{peterson,
+  title={Cyclic codes for error detection},
+  author={Peterson, William Wesley and Brown, Daniel T},
+  journal={Proceedings of the IRE},
+  volume={49},
+  number={1},
+  pages={228--235},
+  year={1961}
+}
+
+@Electronic{pwm_modulator,
+  Title                    = {Analog Pulse Width Modulation},
+  Author                   = {Ward Brown},
+  Organization             = {Texas Instruments Inc.},
+  Url                      = {http://ww1.microchip.com/downloads/en/AppNotes/00857B.pdf},
+  Year                     = {2013},
+  Urlaccessdate={03/04/2017}
+  Journal                  = {Texas Instruments Inc.}
+}

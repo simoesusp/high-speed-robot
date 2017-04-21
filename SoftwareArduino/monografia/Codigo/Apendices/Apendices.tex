@@ -1,5 +1,146 @@
 \chapter{Apêndices}
 
+\section{Diagrama da Classe RF24}
+  \begin{figure}[!htb]
+    \centering
+    \includegraphics[width=\linewidth]{../../Imagens/RF24_class.png}
+    \caption{Diagrama da Classe RF24} %% TODO certificar se realmente é uma WBS!!!
+    \label{RF24_ClassDiag}
+  \end{figure}
+
+\section{Estrutura Analítica do Projeto}
+  \begin{figure}[!htb] %% TODO certificar se realmente é uma WBS!!!
+    \centering
+    \includegraphics[width=\linewidth]{../../Imagens/WBS.png}
+    \caption{Estrutura Analítica do Projeto} %% TODO certificar se realmente é uma WBS!!!
+    \label{WBS}
+  \end{figure}
+  
+\section{Esquemático do Robô}
+  \begin{figure}[!htb]
+    \centering
+    \includegraphics[width=\linewidth]{../../Imagens/robot_schem.png}
+    \caption{Diagrama Elétrico} %% TODO: é um bom nome??
+    \label{fritzing}
+  \end{figure}
+  
+% TODO desatualizada!!!!
+\section{Tabela} % TODO desatualizada!!!!
+% TODO desatualizada!!!!
+\begin{table}[!htb]
+\centering
+\caption{}
+\label{IA}
+\begin{tabular}{|ccccc|c|}
+\hline
+{\color[HTML]{00009B} \textbf{$USS_0$}} & {\color[HTML]{00009B} \textbf{$USS_1$}} & {\color[HTML]{00009B} \textbf{$USS_2$}} & 
+{\color[HTML]{00009B} \textbf{$USS_3$}} & {\color[HTML]{00009B} \textbf{$USS_4$}} & {\color[HTML]{FE0000} \textbf{Ação}} \\ 
+\hline
+{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}  
+                                  & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                             
+       & {\color[HTML]{FE0000} $E_L$}                                     \\ \hline
+{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}  
+                                  & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                             
+       & {\color[HTML]{FE0000} $E_M$}                                     \\ \hline
+{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}  
+                                  & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                             
+       & {\color[HTML]{FE0000} $E_M$}                                     \\ \hline
+{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}  
+                                  & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                             
+       & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
+{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}  
+                                  & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                             
+       & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
+{\color[HTML]{00009B} 0}                                   & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}    
+                                & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                               
+     & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
+{\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                  & {\color[HTML]{00009B} 1}     
+                               & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                
+    & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
+{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}  
+                                & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                               
+     & {\color[HTML]{FE0000} $D_M$}                                     \\ \hline
+{\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}   
+                                 & {\color[HTML]{00009B} 0}                                 & {\color[HTML]{00009B} 1}                                 
+   & {\color[HTML]{FE0000} $D_M$}                                     \\ \hline
+{\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}   
+                                 & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                              
+      & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
+{\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}   
+                                 & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                              
+      & {\color[HTML]{FE0000} $E_M$}                                  \\ \hline
+{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}  
+                                  & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                             
+       & {\color[HTML]{FE0000} $D_F$}                                     \\ \hline
+{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}  
+                                  & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                             
+       & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
+{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}  
+                                  & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                             
+       & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
+{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}  
+                                  & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                             
+       & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}  
+                                  & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                             
+       & {\color[HTML]{FE0000} $D_L$}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}  
+                                  & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                             
+       & {\color[HTML]{FE0000} Frente}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}  
+                                  & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                             
+       & {\color[HTML]{FE0000} $E_M$}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}  
+                                  & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                             
+       & {\color[HTML]{FE0000} $E_M$}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}  
+                                  & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                             
+       & {\color[HTML]{FE0000} $D_F$}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}  
+                                  & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                             
+       & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}  
+                                  & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                             
+       & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}  
+                                  & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                             
+       & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}  
+                                  & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                             
+       & {\color[HTML]{FE0000} $D_M$}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}  
+                                  & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                             
+       & {\color[HTML]{FE0000} $D_M$}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}  
+                                  & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                             
+       & {\color[HTML]{FE0000} $D_M$}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}  
+                                  & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                             
+       & {\color[HTML]{FE0000} Frente}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}  
+                                  & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                             
+       & {\color[HTML]{FE0000} $D_F$}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}  
+                                  & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                             
+       & {\color[HTML]{FE0000} $D_F$}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}  
+                                  & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                             
+       & {\color[HTML]{FE0000} $D_F$}                                     \\ \hline
+{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}  
+                                  & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                             
+       & {\color[HTML]{FE0000} $E_F$}                                    \\ \hline
+
+\end{tabular}
+\end{table}
+
+\section{Fluxograma da Rotina de Desvio de Obstáculos}
+  \begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.8 \linewidth]{../../Imagens/ObstAvoid.png}
+    \caption{Fluxograma da Rotina de Desvio de Obstáculos}
+    \label{ObstAvoid}
+  \end{figure}
+
 \section{Sistemas de Tempo Real}
 São sistemas computacionais que dependem não somente que os dados computados estejam corretos, mas que sejam obtidos dentro de um intervalo de tempo 
 pré determinado, que pode ser maior ou menor de acordo com a aplicação.
@@ -11,14 +152,6 @@ ao contrário dos sistemas \textit{hard}, em que estas perdas não são aceitáv
 
 Algumas características típicas, apesar de não obrigatórias, de sistemas de tempo real são limitações com relação ao tamanho, propósito específico e 
 baixo custo \cite{silberschatz}.
-
-\section{PWM}
-
-\section{GFSK}
-
-\section{banda ISM}
-
-\section{SPI}
 
 \section{CRC}
 Método de detecção de erros aleatórios, isto é, de dados corrompidos ao longo do processo de transmissão ou armazenamento da informação por exemplo 
@@ -52,80 +185,40 @@ G(X) = X^{16} + X^{12} + X^5 + 1
 
 \section{\textit{schmitt trigger}}
 
-\section{Diagrama da Classe RF24}
-  \begin{figure}[!htb]
-    \centering
-    \includegraphics[width=\linewidth]{../../Imagens/RF24_class.png}
-    \caption{Diagrama da Classe RF24} %% TODO certificar se realmente é uma WBS!!!
-    \label{RF24_ClassDiag}
-  \end{figure}
+\section{PWM}
+A modulação por largura de pulso é uma técnica de modulação que consiste em amostrar e codificar o sinal correspondente à mensagem na largura de um 
+trem de pulsos de amplitude fixa, i.e. cada amostra da mensagem é convertida em um pulso retangular cuja duração expressa a amplitude do sinal 
+modulante.
 
-\section{Estrutura Analítica do Projeto}
-  \begin{figure}[!htb] %% TODO certificar se realmente é uma WBS!!!
+Um modulador PWM pode ser implementado utilizando-se um circuito comparador não inversor cuja entrada inversora liga-se à saída de um gerador de 
+ondas tipo dente de serra (\textit{trailing edge modulation}), dente de serra invertida (\textit{leading edge modulation}  ou triangular 
+(\textit{modulation on both edges}), na entrada não inversora, o sinal modulante. 
+Desta forma, quando a tensão da mensagem excede a amplitude da onda gerada, observa-se um sinal alto na saída, caso contrário, baixo, conforme 
+ilustra a Fig. \ref{pwm_modulation_types}.
+
+  \begin{figure}[!htb] %% TODO fonte: https://en.wikipedia.org/wiki/File:Three_PWM_types.svg
     \centering
-    \includegraphics[width=\linewidth]{../../Imagens/WBS.png}
-    \caption{Estrutura Analítica do Projeto} %% TODO certificar se realmente é uma WBS!!!
-    \label{WBS}
-  \end{figure}
-  
-\section{Esquemático do Robô}
-  \begin{figure}[!htb]
-    \centering
-    \includegraphics[width=\linewidth]{../../Imagens/robot_schem.png}
-    \caption{Diagrama Elétrico} %% TODO: é um bom nome??
-    \label{fritzing}
+    \includegraphics[width=0.7\linewidth]{../../Imagens/PWM_modulation_types.png}
+    \caption{Três tipos de modulação PWM: \textit{trailing edge}, \textit{leading edge} e  \textit{both edges}, de cima pra baixo, respectivamente.}
+    \label{pwm_modulation_types}
   \end{figure}
   
-\section{Tabela}
+  %TODO circuito corretor de erros:
+   First, the error amplifier accommodates feedback of the output PWM waveform in order to correct for any errors in the
+output voltage introduced by the comparator. Second, it adds a dc offset to the input voltage so that negative input voltages can be accommodated by 
+the circuit.
+ 
+ Because the supply voltage of the comparator directly impacts the output voltage, PWM circuits without feedback have no power supply rejection. In 
+this TI Design, the error amplifier acts as an inverting amplifier to the input signal, shown as a dc-coupled source VIN. By including the comparator 
+inside the feedback loop of the error amplifier, and adding integration capacitor C1, the error amplifier now directly controls the average output 
+voltage
 
-\begin{table}[!htb]
-\centering
-\caption{}
-\label{IA}
-\begin{tabular}{|ccccc|c|}
-\hline
-{\color[HTML]{00009B} \textbf{$USS_0$}} & {\color[HTML]{00009B} \textbf{$USS_1$}} & {\color[HTML]{00009B} \textbf{$USS_2$}} & 
-{\color[HTML]{00009B} \textbf{$USS_3$}} & {\color[HTML]{00009B} \textbf{$USS_4$}} & {\color[HTML]{FE0000} \textbf{Action}} \\ 
-\hline
-{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} $E_L$}                                     \\ \hline
-{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{FE0000} $E_M$}                                     \\ \hline
-{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} $E_M$}                                     \\ \hline
-{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
-{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
-{\color[HTML]{00009B} 0}                                   & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
-{\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                  & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
-{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                  & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{FE0000} $D_M$}                                     \\ \hline
-{\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                 & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} $D_M$}                                     \\ \hline
-{\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
-{\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} $E_M$}                                  \\ \hline
-{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{FE0000} $D_F$}                                     \\ \hline
-{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
-{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
-{\color[HTML]{00009B} 0}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{FE0000} $D_L$}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} Frente}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{FE0000} $E_M$}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} $E_M$}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{FE0000} $D_F$}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} $E_F$}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{FE0000} $D_M$}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} $D_M$}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{FE0000} $D_M$}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} Frente}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{FE0000} $D_F$}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} $D_F$}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 0}                                    & {\color[HTML]{FE0000} $D_F$}                                     \\ \hline
-{\color[HTML]{00009B} 1}                                     & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{00009B} 1}                                    & {\color[HTML]{FE0000} $E_F$}                                    \\ \hline
 
-\end{tabular}
-\end{table}
 
-\section{Fluxograma da Rotina de Desvio de Obstáculos}
-  \begin{figure}[!htb]
-    \centering
-    \includegraphics[width=0.8 \linewidth]{../../Imagens/ObstAvoid.png}
-    \caption{Fluxograma da Rotina de Desvio de Obstáculos}
-    \label{ObstAvoid}
-  \end{figure}
+para uma descrição detalhada do circuito e simulações vide \cite{pwm_modulator}
+
+\section{GFSK}
+
+\section{banda ISM}
+
+\section{SPI}

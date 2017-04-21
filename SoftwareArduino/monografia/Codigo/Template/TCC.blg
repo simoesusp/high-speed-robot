@@ -56,6 +56,13 @@ Warning--entry type for "RF24_class_doc" isn't style-file defined
 --line 559 of file ../Bibliografia/bibliografia.bib.bib
 Warning--entry type for "pwm_lib" isn't style-file defined
 --line 569 of file ../Bibliografia/bibliografia.bib.bib
+Warning--entry type for "pwm_modulator" isn't style-file defined
+--line 695 of file ../Bibliografia/bibliografia.bib.bib
+I was expecting a `,' or a `}'---line 709 of file ../Bibliografia/bibliografia.bib.bib
+ :   
+ :   Journal                  = {Texas Instruments Inc.}
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 Reallocated glb_str_ptr (elt_size=4) to 20 items from 10.
 Reallocated global_strs (elt_size=20001) to 20 items from 10.
@@ -72,45 +79,45 @@ Warning--campo year vazio ou faltando em RF24_class_doc
 | Em caso de dúvidas ou problemas com este estilo procure |
 | http://www.abntex.net.br/                               |
 +---------------------------------------------------------+
-You've used 36 entries,
+You've used 37 entries,
             6714 wiz_defined-function locations,
-            1387 strings with 14119 characters,
-and the built_in function-call counts, 37481 in all, are:
-= -- 4121
-> -- 631
-< -- 743
-+ -- 1003
-- -- 190
-* -- 2272
-:= -- 4463
-add.period$ -- 129
-call.type$ -- 36
-change.case$ -- 312
-chr.to.int$ -- 57
-cite$ -- 42
-duplicate$ -- 3378
-empty$ -- 2104
-format.name$ -- 984
-if$ -- 8114
-int.to.chr$ -- 3
+            1392 strings with 14237 characters,
+and the built_in function-call counts, 38899 in all, are:
+= -- 4301
+> -- 643
+< -- 788
++ -- 1051
+- -- 194
+* -- 2351
+:= -- 4635
+add.period$ -- 134
+call.type$ -- 37
+change.case$ -- 318
+chr.to.int$ -- 59
+cite$ -- 43
+duplicate$ -- 3538
+empty$ -- 2160
+format.name$ -- 1004
+if$ -- 8390
+int.to.chr$ -- 2
 int.to.str$ -- 0
-missing$ -- 619
-newline$ -- 169
-num.names$ -- 104
-pop$ -- 873
+missing$ -- 635
+newline$ -- 174
+num.names$ -- 108
+pop$ -- 894
 preamble$ -- 1
-purify$ -- 132
+purify$ -- 135
 quote$ -- 0
-skip$ -- 3526
+skip$ -- 3691
 stack$ -- 1
-substring$ -- 1540
-swap$ -- 1258
-text.length$ -- 34
+substring$ -- 1602
+swap$ -- 1314
+text.length$ -- 35
 text.prefix$ -- 0
 top$ -- 0
 type$ -- 2
 warning$ -- 7
-while$ -- 170
+while$ -- 176
 width$ -- 0
-write$ -- 463
-(There were 5 error messages)
+write$ -- 476
+(There were 6 error messages)
