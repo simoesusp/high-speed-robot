@@ -45,7 +45,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "string_handling.h"
 
 /*=============================   DEFINES   ========================================== */
-#define Ncommands 11 // number of commands available
+#define Ncommands 8 // number of commands available
 // ------- radio pins ----------------------------
 #define CE_PIN   5
 #define CSN_PIN 6
@@ -63,7 +63,7 @@ int avgSpeed_r =  150;
 int lowSpeed_l =  120;
 int lowSpeed_r =  100;
 
-#define buffer_size 50
+
 
 // --------- deadlines (in millisseconds)----------------------------
 #define t_max 75  // TODO: give it a better name
@@ -106,7 +106,6 @@ int lowSpeed_r =  100;
 
 /*========================= GLOBAL VARIABLES ============================================================*/
 
-unsigned int **buffer;
 
 // -------- motor related variables -----------------
 //TODO: maybe we could use uint8_t to save space
@@ -141,6 +140,13 @@ struct sensor_t
     short int pointer; // points to most recent data in circular vector distance.
 } USS[5]; 
 
+
+struct button_t
+{
+    uint8_t Bit;
+    uint8_t port;
+}Button;
+
 bool safety_button; // robot: button status 
 
     bool select = 0; // 0: master(remote control) ; 1: slave(robot) 
@@ -162,9 +168,6 @@ void read_Blocking();
 void statusFeedback(char);
 void writeSensorsData();
 
-//---------- string handling functions -------------
-bool ToBeSubstituted(char*);
-
 void set_msg(); // transmits Serial.read() or safety button status - remote controller
 void setInternalCommands(char**); // robot commands
 bool processing(); // processes robot received data
@@ -184,7 +187,8 @@ int obstacleShape();
 void speedControl(int);
 void initTable(short int *);
 /*=======================================================================================================*/
- int mypow(int , int );
+bool parse_command();
+bool write_blocking(char*);
 
 void setup()
 {
@@ -241,10 +245,6 @@ void setup()
             intCmd[i] = (char*)malloc(intCmd_size*sizeof(char));
         setInternalCommands(intCmd);
 
-        buffer = (unsigned int**)malloc(buffer_size*sizeof(unsigned int*));
-        for(int i = 0; i < buffer_size; i++)
-            buffer[i] = (unsigned int*)malloc(5*sizeof(unsigned int));
-
         T = (short int*)malloc(32*sizeof(short int));
         initTable(T); // T: truth table
     }
@@ -259,6 +259,8 @@ void setup()
         digitalWrite(ON, HIGH);
         digitalWrite(OFF, LOW);
 
+Button.Bit = digitalPinToBitMask(state);
+Button.port  = digitalPinToPort(state); 
     }
 
 
@@ -283,6 +285,7 @@ void ObstacleAvoid()
     {
         //   STOP !!!
         stop();
+        write_blocking("danger!!!");
     }
     else // Warning Zone and Safe Zone
         ObstacleAvoidanceTechnique(obstacle_avoidance_method, obstacle);
@@ -310,6 +313,7 @@ void SensorSettings()
     USS[4].Bit = digitalPinToBitMask(echoPin4);
     USS[4].port = digitalPinToPort(echoPin4);
     USS[4].pointer = 4;
+
 }
 
 
@@ -512,7 +516,7 @@ void speedControl(int obstacle)
             break;
         
         default: // not supposed to enter here
-            ToBeSubstituted("ERROR!!!");
+            write_blocking("ERROR!!!");
             stop();
             break;
     }
@@ -600,27 +604,40 @@ void status()
 /*----------------------------------------- DATA FORMAT: ---------------------------------------------------------------------------
 frequency:(int32_t)frequency_l:(uint8_t)pwm_value_l;(int32_t)frequency_r:(uint8_t)pwm_value_r
 ----------------------------------------------------------------------------------------------------------------------------------- */	
+
 	char status[MaxPayload], aux[6]; //
 	int i;
 
 	status[0] = '\0';
 
-	int2char(aux,pwm_value_l);
+	int2char(aux,lowSpeed_l);
 	append(status,aux);
-	append(status,"S|");
+	append(status,"|");
 
+	aux[0] = '\0';
+	int2char(aux,avgSpeed_l);
+	append(status,aux);
+	append(status,"|");
+
+	int2char(aux,fullSpeed_l);
+	append(status,aux);
+	append(status,"&&");
+
+	int2char(aux,lowSpeed_r);
+	append(status,aux);
+	append(status,"|");
+
+	aux[0] = '\0';
+	int2char(aux,avgSpeed_r);
+	append(status,aux);
+	append(status,"|");
+
+	int2char(aux,fullSpeed_r);
+	append(status,aux);
 	aux[0] = '\0';
 	append(status,aux);
 
-	int2char(aux,pwm_value_r);
-	append(status,aux);
-	append(status,"S ");
-
-	aux[0] = '\0';
-	append(status,aux);
-
-	ToBeSubstituted(status);
-
+	write_blocking(status);
 }
 
 void communication()
@@ -634,7 +651,7 @@ void communication()
         }
         else
         {
-            ToBeSubstituted("!");
+            write_blocking("!");
         }
 
     }
@@ -651,66 +668,50 @@ void action(int n)
 	if(n < Ncommands)
 		switch(n)
         {
-            case 0: //	   left
+            case 0: //	  start 
+                if( parse_command() )
+                    write_blocking("invalid syntax");
+                else
+                    status();
                 break;
 
-            case 1: //	   right
-                break;
-
-            case 2: //	   both
-                break;
-
-            case 3: //	   speed
-                break;
-
-            case 4: //	   start
-                ToBeSubstituted("here we go!");
+            case 1: //	  start 
+                write_blocking("here we go!");
                 start();
                 break;
 
-            case 5: //	   stop
-                stop();
-                ToBeSubstituted("stop!!!");
-                break;
-
-            case 6: //	   sweep
-                break;
-
-            case 7: //	  status 
+            case 2: //	  status 
                 status();
                 break;
 
-            case 8: //	 frequency 
-                break;
-            case 9: //	 safety button status 
+            case 3: //	 safety button status 
                 if(safety_button)
-                    ToBeSubstituted("ON");
+                    write_blocking("ON");
                 else
-                    ToBeSubstituted("OFF");
-                break;
-            case 10: // dist <=> print USS data  
-                printSensorsData();
-                break;
-            case 11: //	obstacle avoidance 
-                ToBeSubstituted("autonomous navigation");
-                autonomous();
-                break;
-            case 12: //	log
-                break;
-                
-            case 13: // test	
-                break;
-                
-            case 14: // autonomous navigation without USS data feedback to remote controller
+                    write_blocking("OFF");
                 break;
 
-            case 15: // toggle the number of USS being used for decision making
+            case 4: // display USS reading
+                printSensorsData();
+                break;
+
+            case 5: //	obstacle avoidance 
+                write_blocking("autonomous navigation");
+                autonomous();
+                write_blocking("autonomous navigation");
+                break;
+
+            case 6: // toggle the number of USS being used for decision making
                 all_sensors = ! all_sensors;
                 if(all_sensors)
-                    ToBeSubstituted("using 5 USS.");
+                    write_blocking("using 5 USS.");
                 else
-                    ToBeSubstituted("using 3 USS.");
+                    write_blocking("using 3 USS.");
                 break;
+            case 7: // toggle the number of USS being used for decision making
+                statusFeedback('0');
+                break;
+                
         }
 }
 
@@ -726,7 +727,7 @@ void start()
     bool safe = 0;
 
     t = millis();
-    ToBeSubstituted("{");
+    write_blocking("{");
     while(millis() < t + t_start)
     {
         if( SensorReading() < 0)
@@ -757,7 +758,7 @@ void start()
 
         if(rcv[0] == '-')
         {
-            ToBeSubstituted("#");
+            write_blocking("#");
             break;
         }
 
@@ -772,7 +773,7 @@ void start()
             iteration++;
     }
     stop();
-    ToBeSubstituted("#");
+    write_blocking("#");
 }
 
 bool processing()
@@ -781,7 +782,8 @@ bool processing()
 	int i;
 	for(i = 0; i < Ncommands; i++) // search for a known command
 		if(isSubstring(intCmd[i],rcv) == 1)
-			break;
+            if(isEqual(intCmd[i],rcv) == 1 || i == 0)
+                break;
 
 	if(i < Ncommands) // have we just got a command?
 		action(i); // yes, perform i-th command 
@@ -796,14 +798,14 @@ bool processing()
         }
     }
     else
-        ToBeSubstituted(rcv);
+        write_blocking(rcv);
     return 0;
 }
 
 bool checkButton()
 {
     t = millis();
-    if(digitalRead(state) == HIGH)
+    if (*portInputRegister(Button.port) & Button.Bit)
     {
         cmd[0] = '+';
         cmd[1] = '\0';
@@ -848,19 +850,14 @@ void set_msg()
 void setInternalCommands(char**m)
 {
 
-	copyString("left",m[0]);
-	copyString("right",m[1]);
-	copyString("both",m[2]);
-	copyString("speed",m[3]);
-	copyString("start",m[4]);
-	copyString("stop",m[5]);
-	copyString("sweep",m[6]);
-	copyString("status",m[7]);
-	copyString("freq",m[8]);
-	copyString("button",m[9]);
-	copyString("dist",m[10]);
-	copyString("auto",m[11]);
-	copyString("USS",m[12]);
+	copyString(":",m[0]);
+	copyString("start",m[1]);
+	copyString("status",m[2]);
+	copyString("button",m[3]);
+	copyString("dist",m[4]);
+	copyString("auto",m[5]);
+	copyString("USS",m[6]);
+	copyString("teste",m[7]);
 }
 
 
@@ -874,6 +871,8 @@ bool read_nonBlocking() // remote controller
 
         if(rcv[0] != '!') // if robot not waiting for command
             Serial.println(rcv);
+        else if(rcv[0] != '{')
+            checkButton();
 
         return 0; // success
     } 
@@ -891,56 +890,27 @@ void read_Blocking() // robot
         done = radio.read( rcv, sizeof(rcv) );
 }
 
-
 void statusFeedback(char iteration)
 {
-    int OS = obstacleShape();
-    char aux[15];
+    char aux[5];
+    cmd[0] = '\0';
+    aux[0] = '\0';
 
      aux[0] = '{';
-     aux[1] = '\0';
+     aux[1] = iteration;
+     aux[2] = '}';
+     aux[3] = '\0';
      append(cmd,aux);
 
     writeSensorsData();
 
-    // Move
-    if( (USS[0].mean < minDist)||(USS[0].mean < minDist)||(USS[2].mean < minDist)||(USS[3].mean < minDist)||(USS[4].mean < minDist) )
-        append(cmd,"STP ");
-    else
-    {
-        if(OS > 0)
-            switch (T[OS])
-            {
-                case (E_L):
-                    append(cmd,"EL ");
-                    break;
-                case (E_M):
-                    append(cmd,"EM ");
-                    break;
-                case (E_F):
-                    append(cmd,"EF ");
-                    break;
-                case (D_L):
-                    append(cmd,"DL ");
-                    break;
-                case (D_M):
-                    append(cmd,"DM ");
-                    break;
-                case (D_F):
-                    append(cmd,"DF ");
-                    break;
-                case (Frente):
-                    append(cmd,"Fr ");
-                    break;
-            }
-        else
-            append(cmd,"OR ");
-    }
+    append(cmd," L");
+    int2char(aux,pwm_value_l);
+    append(cmd,aux);
+    append(cmd, "R");
+    int2char(aux,pwm_value_r);
+    append(cmd,aux);
 
-    radio.writeAckPayload(1,cmd,sizeof(cmd));
-    rcv[0] = '\0';
-    cmd[0] = '\0';
-    aux[0] = '\0';
 }
 
 // ser mais rigoroso ao parar o carrinho. Verificar se é somente um sensor com medidas erradas.
@@ -950,7 +920,7 @@ void autonomous()
     status[0] = '\0';
 
     t = millis();
-    ToBeSubstituted("{");
+    write_blocking("{");
     while(millis() < t + t_start)
     {
         ObstacleAvoid();
@@ -964,24 +934,29 @@ void autonomous()
             if(rcv[0] == '-')
             {
                 stop();
-                ToBeSubstituted("#");
+                write_blocking("button command");
                 break;
             }
 
             if(rcv[0] == '+')
                 t = millis();
 
-            statusFeedback(iteration);
-            rcv[0] = '\0';
-            if (iteration == '9')
-                iteration = '0';
-            else 
-                iteration++;
         }
+
+        statusFeedback(iteration);
+        while(millis() < t + t_start)
+            if(write_blocking(cmd))
+                break;
+
+        rcv[0] = '\0';
+        if (iteration == '9')
+            iteration = '0';
+        else 
+            iteration++;
 
     }
     stop();
-    ToBeSubstituted("#");
+    write_blocking("time out");
 }
 
 
@@ -989,6 +964,14 @@ void writeSensorsData()
 {
     char aux[6];
 
+    for (int i = 0; i < 5; i++)
+    {
+        int2char(aux,USS[i].distance[USS[i].pointer]);
+        append(cmd,aux);
+        if(i<4)
+            append(cmd,"|");
+    }
+/*
     int2char(aux,USS[4].mean);
     append(cmd,aux);
     append(cmd,"|");
@@ -1003,6 +986,7 @@ void writeSensorsData()
     append(cmd,"|");
     int2char(aux,USS[0].mean);
     append(cmd,aux);
+*/
     append(cmd," ");
 }
 
@@ -1025,13 +1009,12 @@ void printSensorsData()
         for (i = 0; i < 5; i++)
         {
             int2char(aux,USS[i].distance[USS[i].pointer]);
-            //int2char(aux,USS[i].mean);
             append(status,aux);
             if(i<4)
                 append(status,"|");
         }
 
-        while(!ToBeSubstituted(status));
+        while(!write_blocking(status));
         if(radio.isAckPayloadAvailable());
         {
             bool done = false;
@@ -1041,15 +1024,13 @@ void printSensorsData()
             if(rcv[0] == '-')
             {
                 stop();
-                ToBeSubstituted("#");
+                write_blocking("#");
                 break;
             } 
             else if(rcv[0] == '+')
             {
                 t = millis();
             }
-
-            rcv[0] = '\0';
         }
 
         myPulseIn(dyn);
@@ -1088,8 +1069,26 @@ void proportionalController()
         ACERTAR O PRINT DOS DADOS PARA QUE ELE RETORNE AS VELOCIDADES
     */
     char status[20], aux[5];
+    int obst_to_the_left, obst_to_the_right, leftSpeed, rightSpeed;
+/*
     int leftSpeed = ( ( (USS[0].mean + USS[1].mean)/2 - 100 )*(avgSpeed_l - 120) )/(400 - 100);
     int rightSpeed = ( ( (USS[3].mean + USS[4].mean)/2 - 100 )*(avgSpeed_r  - 100) )/(400 - 100);
+*/
+    if(USS[0].mean < USS[1].mean && USS[0].mean < USS[2].mean)
+        obst_to_the_right = USS[0].mean;
+    else if(USS[1].mean < USS[0].mean && USS[1].mean < USS[2].mean)
+        obst_to_the_right = USS[1].mean;
+    else
+        obst_to_the_right = USS[2].mean;
+
+    if(USS[3].mean < USS[4].mean)
+        obst_to_the_left = USS[3].mean;
+    else
+        obst_to_the_left = USS[4].mean;
+    
+leftSpeed = lowSpeed_l + (fullSpeed_l - lowSpeed_l)*(obst_to_the_right - minDist)/(outOfRange - minDist);
+rightSpeed = lowSpeed_r + (fullSpeed_r - lowSpeed_r)*(obst_to_the_left - minDist)/(outOfRange - minDist);
+
 
     pwmWrite(leftmotor, leftSpeed);
     pwmWrite(rightmotor, rightSpeed);
@@ -1098,11 +1097,11 @@ void proportionalController()
     append(status,aux);
 	int2char(aux,rightSpeed);
     append(status,aux);
-    ToBeSubstituted(status);
+    write_blocking(status);
 
 }
 
-bool ToBeSubstituted(char *m)
+bool write_blocking(char *m)
 {
     if( m[0] != '\0' )
     {
@@ -1111,5 +1110,105 @@ bool ToBeSubstituted(char *m)
         check = radio.write(cmd, sizeof(cmd) );
         return check;
     }
+    return 0;
+}
+
+bool parse_command() // expected command format  => ':l[0-999]a[0-999]f[0-999]|l[0-999]a[0-999]f[0-999]'
+{
+    char preset_speeds[4];
+    preset_speeds[0] = 'l'; // low_speed
+    preset_speeds[1] = 'a'; // avg_speed
+    preset_speeds[2] = 'f'; // full_speed
+
+    int new_speed[6];
+
+    int next = 0;
+    if(rcv[1+next] == 'l')
+    {
+        char aux[4];
+        aux[0] = rcv[2+next];
+        aux[1] = rcv[3+next];
+        aux[2] = rcv[4+next];
+        aux[3] = '\0';
+        new_speed[0] = char2int(aux);
+    }
+    else
+        return 1;
+
+    next = 4;
+    if(rcv[1+next] == 'a')
+    {
+        char aux[4];
+        aux[0] = rcv[2+next];
+        aux[1] = rcv[3+next];
+        aux[2] = rcv[4+next];
+        aux[3] = '\0';
+        new_speed[1] = char2int(aux);
+    }
+    else
+        return 1;
+
+    next = 8;
+    if(rcv[1+next] == 'f')
+    {
+        char aux[4];
+        aux[0] = rcv[2+next];
+        aux[1] = rcv[3+next];
+        aux[2] = rcv[4+next];
+        aux[3] = '\0';
+        new_speed[2] = char2int(aux);
+    }
+    else
+        return 1;
+
+    if(rcv[13] != '|')
+        return 1;
+
+    next = 13;
+    if(rcv[1+next] == 'l')
+    {
+        char aux[4];
+        aux[0] = rcv[2+next];
+        aux[1] = rcv[3+next];
+        aux[2] = rcv[4+next];
+        aux[3] = '\0';
+        new_speed[3] = char2int(aux);
+    }
+    else
+        return 1;
+
+    next = 17;
+    if(rcv[1+next] == 'a')
+    {
+        char aux[4];
+        aux[0] = rcv[2+next];
+        aux[1] = rcv[3+next];
+        aux[2] = rcv[4+next];
+        aux[3] = '\0';
+        new_speed[4] = char2int(aux);
+    }
+    else
+        return 1;
+
+    next = 21;
+    if(rcv[1+next] == 'f')
+    {
+        char aux[4];
+        aux[0] = rcv[2+next];
+        aux[1] = rcv[3+next];
+        aux[2] = rcv[4+next];
+        aux[3] = '\0';
+        new_speed[5] = char2int(aux);
+    }
+    else
+        return 1;
+
+    lowSpeed_l = new_speed[0];
+    avgSpeed_l = new_speed[1];
+    fullSpeed_l = new_speed[2];
+    lowSpeed_r = new_speed[3];
+    avgSpeed_r = new_speed[4];
+    fullSpeed_r = new_speed[5];
+
     return 0;
 }

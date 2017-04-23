@@ -3,6 +3,7 @@
 void append(char *, char *);
 void copyString(char *, char *);
 bool isSubstring(char *, char *);
+bool isEqual(char *, char *);
 int char2int(char*);
 void int2char(char *o,int n);
 int mypow(int , int );
@@ -49,17 +50,37 @@ bool isSubstring(char *a, char *b)
 	}	
 
 	for(i = 0; i < MaxPayload; i++ )
+    {
+        if((a[i] == '\0')||(b[i] == '\0'))
+            return 1;
+        if(a[i] != b[i])
+            return 0;
+    }
+	return 1;
+}
+
+
+bool isEqual(char *a, char *b)
+{
+	int i;
+
+	if((a[0] == '\0')||(b[0] == '\0'))
 	{
-		if((a[i] == '\0')||(b[i] == '\0'))
-			if((a[i] == '\0')&&(b[i] == '\0'))
-				return 1;
-			else
-			{
-				return 0;
-			}
-		if(a[i] != b[i])
-			return 0;
-	}
+		return 0;
+	}	
+
+	for(i = 0; i < MaxPayload; i++ )
+    {
+        if((a[i] == '\0')||(b[i] == '\0'))
+            if((a[i] == '\0')&&(b[i] == '\0'))
+            return 1;
+        else
+        {
+            return 0;
+        }
+        if(a[i] != b[i])
+            return 0;
+    }
 	return 1;
 }
 
