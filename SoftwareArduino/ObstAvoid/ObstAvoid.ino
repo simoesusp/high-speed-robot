@@ -38,13 +38,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
    Questions: terry@yourduino.com */
 
 #include <SPI.h>
-#include <nRF24L01.h> // acho que não está sendo utilizada!!!
 #include <RF24.h>
 #include <Time.h>
 #include <PWM.h>
 
+#include "string_handling.h"
+
 /*=============================   DEFINES   ========================================== */
-#define Ncommands 16 // number of commands available
+#define Ncommands 11 // number of commands available
 // ------- radio pins ----------------------------
 #define CE_PIN   5
 #define CSN_PIN 6
@@ -71,7 +72,6 @@ int lowSpeed_r =  100;
 
 // RADIO RELATED
 
-#define MaxPayload 24 // Maximum message size (32 bytes)
 #define intCmd_size 9 // Bytes
 // ---------- safety button pins -----------------
 #define ON  9// always high
@@ -110,15 +110,11 @@ unsigned int **buffer;
 
 // -------- motor related variables -----------------
 //TODO: maybe we could use uint8_t to save space
-/*int32_t*/ int frequency_r = 400;    // right motor pwm_value  = Motor Stopped   :  Pulse Width = 1ns
-/*int32_t*/ int frequency_l = 400;    // left motor frequency (in Hz)
-/*uint8_t*/ int pwm_value_r = 330;    // right motor  pwm_value  = Motor Stopped   :  Pulse Width = 1ns
-/*uint8_t*/ int pwm_value_l = 104;    // left motor  pwm_value  = Motor Stopped   :  Pulse Width = 1ns
+int frequency_r = 400;    // right motor pwm_value  = Motor Stopped   :  Pulse Width = 1ns
+int frequency_l = 400;    // left motor frequency (in Hz)
+int pwm_value_r = 330;    // right motor  pwm_value  = Motor Stopped   :  Pulse Width = 1ns
+int pwm_value_l = 104;    // left motor  pwm_value  = Motor Stopped   :  Pulse Width = 1ns
 
-bool left; // left motor on/off flag
-bool right; // right motor on/off flag
-bool speed; // if true, try to read pwm_value from remote control
-bool frequency;// if true, try to read frequency from remote control
 bool dyn = 1; // dynamical/fixed USS echo reading
 bool all_sensors = 0;
 
@@ -147,7 +143,7 @@ struct sensor_t
 
 bool safety_button; // robot: button status 
 
-    bool select = 1; // 0: master(remote control) ; 1: slave(robot) 
+    bool select = 0; // 0: master(remote control) ; 1: slave(robot) 
 
 short int *T;                  // Truth Table
 
@@ -156,12 +152,9 @@ short int *T;                  // Truth Table
 /*========================= FUNCTIONS  ============================================================*/
 
 void ObstacleAvoidanceTechnique(int obstacle_avoidance_method, int obstacle);
-void proportionalController();
 
 
 void autonomous();
-void logging();
-void flushLogData(int); // TODO: find a better name for it.
 // -------- communication oriented functions -------
 void communication();
 bool read_nonBlocking();
@@ -171,12 +164,7 @@ void statusFeedback(char);
 void writeSensorsData();
 
 //---------- string handling functions -------------
-void append(char *, char *);
-void copyString(char *, char *);
-bool isSubstring(char *, char *);
 void write_ackPayload(char*);
-int char2int(char*);
-void int2char(char *o,int n);
 
 void set_msg(); // transmits Serial.read() or safety button status - remote controller
 void setInternalCommands(char**); // robot commands
@@ -187,7 +175,6 @@ void start(); // turn selected motors on
 bool checkButton(); // check safety button status
 
 //--------- obstacle avoidance related functions ---
-void quiet();
 void ObstacleAvoid();
 void SensorSettings();
 int myPulseIn(bool);
@@ -205,7 +192,7 @@ void setup()
     //------------------------ nRF24L01+ transceiver Settings -----------
 	Serial.begin(115200);
 	radio.begin();
-    radio.setDataRate(RF24_250KBPS);
+    radio.setDataRate(RF24_2MBPS);
 	radio.enableAckPayload();
     radio.setPALevel(RF24_PA_MAX);
     radio.setRetries(8,15);
@@ -345,64 +332,19 @@ int myPulseIn( bool dynamical_reading)
     boolean previous_pulse[5]; // auxiliar variable that states if previous pulse has already ended or not.
     boolean reading[5];  // auxiliar variable that states if data is being read or not.
 
-    reading[0] = LOW;
-    previous_pulse[0] = LOW;
-
-    reading[1] = LOW;
-    previous_pulse[1] = LOW;
-
-    reading[2] = LOW;
-    previous_pulse[2] = LOW;
-
-    reading[3] = LOW;
-    previous_pulse[3] = LOW;
-
-    reading[4] = LOW;
-    previous_pulse[4] = LOW;
-
-
-    //	processing distance, so state is set to LOW and duration initialized 0.
-    USS[0].data_available = LOW;
-    USS[0].duration = 0;
-
-    USS[1].data_available = LOW;
-    USS[1].duration = 0;
-
-    USS[2].data_available = LOW;
-    USS[2].duration = 0;
-
-    USS[3].data_available = LOW;
-    USS[3].duration = 0;
-
-    USS[4].data_available = LOW;
-    USS[4].duration = 0;
-
-    // adjusting pointer
-    if(USS[0].pointer == 4)
-        USS[0].pointer = 0;
-    else
-        USS[0].pointer = USS[0].pointer + 1;
-
-    if(USS[1].pointer == 4)
-        USS[1].pointer = 0;
-    else
-        USS[1].pointer = USS[1].pointer + 1;
-
-    if(USS[2].pointer == 4)
-        USS[2].pointer = 0;
-    else
-        USS[2].pointer = USS[2].pointer + 1;
-
-    if(USS[3].pointer == 4)
-        USS[3].pointer = 0;
-    else
-        USS[3].pointer = USS[3].pointer + 1;
-
-    if(USS[4].pointer == 4)
-        USS[4].pointer = 0;
-    else
-        USS[4].pointer = USS[4].pointer + 1;
-
+    for(int i = 0; i < 5; i++)
+    {
+        reading[i] = LOW;
+        previous_pulse[i] = LOW;
+        //	processing distance, so state is set to LOW and duration initialized 0.
+        USS[i].data_available = LOW;
+        USS[i].duration = 0;
+        // adjusting pointer
+        if(USS[i].pointer == 4)
+            USS[i].pointer = 0;
+        else
+            USS[i].pointer = USS[i].pointer + 1;
+    }
     // trigger
     digitalWrite(trigPin, LOW);
     delayMicroseconds(2);
@@ -413,189 +355,55 @@ int myPulseIn( bool dynamical_reading)
     // wait for echo
     while (!finished)
     {
-        if (!(USS[0].data_available)) // if data hasn't already been read
+        for(int i = 0; i < 5; i++)
         {
-            if (previous_pulse[0]) // if previous pulse has ended
+            if (!(USS[i].data_available)) // if data hasn't already been read
             {
-                if (reading[0]) // if data is being read
+                if (previous_pulse[i]) // if previous pulse has ended
                 {
-                    // if data has just finished being read
-                    if ((*portInputRegister(USS[0].port) & USS[0].Bit) != USS[0].Bit)
+                    if (reading[i]) // if data is being read
                     {
-                        USS[0].duration = micros() - USS[0].duration;
-                        USS[0].distance[USS[0].pointer] = USS[0].duration / 58.2;
-                        USS[0].data_available = HIGH;
+                        // if data has just finished being read
+                        if ((*portInputRegister(USS[i].port) & USS[i].Bit) != USS[i].Bit)
+                        {
+                            USS[i].duration = micros() - USS[i].duration;
+                            USS[i].distance[USS[i].pointer] = USS[i].duration / 58.2;
+                            USS[i].data_available = HIGH;
+                        }
+                    }
+                    else // if data hasn't started to be read
+                    {
+                        // check if it has just started.
+                        if ((*portInputRegister(USS[i].port) & USS[i].Bit) == USS[i].Bit)
+                        {
+                            USS[i].duration = micros();
+                            reading[i] = HIGH;
+                        }
                     }
                 }
-                else // if data hasn't started to be read
+                else
                 {
-                    // check if it has just started.
-                    if ((*portInputRegister(USS[0].port) & USS[0].Bit) == USS[0].Bit)
-                    {
-                        USS[0].duration = micros();
-                        reading[0] = HIGH;
-                    }
+                    // check if previous pulse has just ended and set previous_pulse if it has.
+                    if ((*portInputRegister(USS[i].port) & USS[i].Bit) != USS[i].Bit)
+                        previous_pulse[i] = HIGH;
                 }
-            }
-            else
-            {
-                // check if previous pulse has just ended and set previous_pulse if it has.
-                if ((*portInputRegister(USS[0].port) & USS[0].Bit) != USS[0].Bit)
-                    previous_pulse[0] = HIGH;
             }
         }
 
-        if (!(USS[1].data_available)) // if data hasn't already been read
-        {
-            if (previous_pulse[1]) // if previous pulse has ended
-            {
-                if (reading[1]) // if data is being read
-                {
-                    // if data has just finished being read
-                    if ((*portInputRegister(USS[1].port) & USS[1].Bit) != USS[1].Bit)
-                    {
-                        USS[1].duration = micros() - USS[1].duration;
-                        USS[1].distance[USS[1].pointer] = USS[1].duration / 58.2;
-                        USS[1].data_available = HIGH;
-                    }
-                }
-                else // if data hasn't started to be read
-                {
-                    // check if it has just started.
-                    if ((*portInputRegister(USS[1].port) & USS[1].Bit) == USS[1].Bit)
-                    {
-                        USS[1].duration = micros();
-                        reading[1] = HIGH;
-                    }
-                }
-            }
-            else
-            {
-                // check if previous pulse has just ended and set previous_pulse if it has.
-                if ((*portInputRegister(USS[1].port) & USS[1].Bit) != USS[1].Bit)
-                    previous_pulse[1] = HIGH;
-            }
-        }
-
-        if (!(USS[2].data_available)) // if data hasn't already been read
-        {
-            if (previous_pulse[2]) // if previous pulse has ended
-            {
-                if (reading[2]) // if data is being read
-                {
-                    // if data has just finished being read
-                    if ((*portInputRegister(USS[2].port) & USS[2].Bit) != USS[2].Bit)
-                    {
-                        USS[2].duration = micros() - USS[2].duration;
-                        USS[2].distance[USS[2].pointer] = USS[2].duration / 58.2;
-                        USS[2].data_available = HIGH;
-                    }
-                }
-                else // if data hasn't started to be read
-                {
-                    // check if it has just started.
-                    if ((*portInputRegister(USS[2].port) & USS[2].Bit) == USS[2].Bit)
-                    {
-                        USS[2].duration = micros();
-                        reading[2] = HIGH;
-                    }
-                }
-            }
-            else
-            {
-                // check if previous pulse has just ended and set previous_pulse if it has.
-                if ((*portInputRegister(USS[2].port) & USS[2].Bit) != USS[2].Bit)
-                    previous_pulse[2] = HIGH;
-            }
-        }
-
-        if (!(USS[3].data_available)) // if data hasn't already been read
-        {
-            if (previous_pulse[3]) // if previous pulse has ended
-            {
-                if (reading[3]) // if data is being read
-                {
-                    // if data has just finished being read
-                    if ((*portInputRegister(USS[3].port) & USS[3].Bit) != USS[3].Bit)
-                    {
-                        USS[3].duration = micros() - USS[3].duration;
-                        USS[3].distance[USS[3].pointer] = USS[3].duration / 58.2;
-                        USS[3].data_available = HIGH;
-                    }
-                }
-                else // if data hasn't started to be read
-                {
-                    // check if it has just started.
-                    if ((*portInputRegister(USS[3].port) & USS[3].Bit) == USS[3].Bit)
-                    {
-                        USS[3].duration = micros();
-                        reading[3] = HIGH;
-                    }
-                }
-            }
-            else
-            {
-                // check if previous pulse has just ended and set previous_pulse if it has.
-                if ((*portInputRegister(USS[3].port) & USS[3].Bit) != USS[3].Bit)
-                    previous_pulse[3] = HIGH;
-            }
-        }
-
-        if (!(USS[4].data_available)) // if data hasn't already been read
-        {
-            if (previous_pulse[4]) // if previous pulse has ended
-            {
-                if (reading[4]) // if data is being read
-                {
-                    // if data has just finished being read
-                    if ((*portInputRegister(USS[4].port) & USS[4].Bit) != USS[4].Bit)
-                    {
-                        USS[4].duration = micros() - USS[4].duration;
-                        USS[4].distance[USS[4].pointer] = USS[4].duration / 58.2;
-                        USS[4].data_available = HIGH;
-                    }
-                }
-                else // if data hasn't started to be read
-                {
-                    // check if it has just started.
-                    if ((*portInputRegister(USS[4].port) & USS[4].Bit) == USS[4].Bit)
-                    {
-                        USS[4].duration = micros();
-                        reading[4] = HIGH;
-                    }
-                }
-            }
-            else
-            {
-                // check if previous pulse has just ended and set previous_pulse if it has.
-                if ((*portInputRegister(USS[4].port) & USS[4].Bit) != USS[4].Bit)
-                    previous_pulse[4] = HIGH;
-            }
-        }
 
         if (millis() > initTime + time_out)
         {
             // if there is no echo, we assume there is nothing in front of us
-            if( !(USS[0].data_available) )
-                USS[0].distance[USS[0].pointer] = outOfRange;
-
-            if( !(USS[1].data_available) )
-                USS[1].distance[USS[1].pointer] = outOfRange;
-
-            if( !(USS[2].data_available) )
-                USS[2].distance[USS[2].pointer] = outOfRange;
-
-            if( !(USS[3].data_available) )
-                USS[3].distance[USS[3].pointer] = outOfRange;
-
-            if( !(USS[4].data_available) )
-                USS[4].distance[USS[4].pointer] = outOfRange;
+            for(int i = 0; i < 5; i++)
+            {
+                if( !(USS[i].data_available) )
+                    USS[i].distance[USS[i].pointer] = outOfRange;
+            }
             return 0;
         }
 
         finished =  USS[0].data_available &  USS[1].data_available &  USS[2].data_available &  USS[3].data_available & USS[4].data_available;
     }
-
 
     if(!dynamical_reading)
         while(millis() < initTime + time_out) ; // TODO: wasted time, find out something useful to do here.
@@ -715,160 +523,16 @@ void speedControl(int obstacle)
 void getExtreamValues()
 {
     // 0
-    USS[0].farthest = USS[0].distance[0];
-    USS[0].closest = USS[0].distance[0];
-    USS[0].mean = USS[0].distance[0];
+    for(int j = 0; j< 5; j++)
+        for(int i = 0; i< 5; i++)
+        {
+            USS[i].farthest = USS[i].distance[j];
+            USS[i].closest = USS[i].distance[j];
+            USS[i].mean = USS[i].distance[j];
+        }
 
-    USS[1].farthest = USS[1].distance[0];
-    USS[1].closest = USS[1].distance[0];
-    USS[1].mean = USS[1].distance[0];
-
-    USS[2].farthest = USS[2].distance[0];
-    USS[2].closest = USS[2].distance[0];
-    USS[2].mean = USS[2].distance[0];
-
-    USS[3].farthest = USS[3].distance[0];
-    USS[3].closest = USS[3].distance[0];
-    USS[3].mean = USS[3].distance[0];
-
-    USS[4].farthest = USS[4].distance[0];
-    USS[4].closest = USS[4].distance[0];
-    USS[4].mean = USS[4].distance[0];
-
-    // 1
-    if(USS[0].farthest < USS[0].distance[1])
-        USS[0].farthest = USS[0].distance[1];
-    if(USS[0].closest > USS[0].distance[1])
-        USS[0].closest = USS[0].distance[1];
-    USS[0].mean = USS[0].mean + USS[0].distance[1];
-
-    if(USS[1].farthest < USS[1].distance[1])
-        USS[1].farthest = USS[1].distance[1];
-    if(USS[1].closest > USS[1].distance[1])
-        USS[1].closest = USS[1].distance[1];
-    USS[1].mean = USS[1].mean + USS[1].distance[1];
-
-    if(USS[2].farthest < USS[2].distance[1])
-        USS[2].farthest = USS[2].distance[1];
-    if(USS[2].closest > USS[2].distance[1])
-        USS[2].closest = USS[2].distance[1];
-    USS[2].mean = USS[2].mean + USS[2].distance[1];
-
-    if(USS[3].farthest < USS[3].distance[1])
-        USS[3].farthest = USS[3].distance[1];
-    if(USS[3].closest > USS[3].distance[1])
-        USS[3].closest = USS[3].distance[1];
-    USS[3].mean = USS[3].mean + USS[3].distance[1];
-
-    if(USS[4].farthest < USS[4].distance[1])
-        USS[4].farthest = USS[4].distance[1];
-    if(USS[4].closest > USS[4].distance[1])
-        USS[4].closest = USS[4].distance[1];
-    USS[4].mean = USS[4].mean + USS[4].distance[1];
-
-    // 2
-    if(USS[0].farthest < USS[0].distance[2])
-        USS[0].farthest = USS[0].distance[2];
-    if(USS[0].closest > USS[0].distance[2])
-        USS[0].closest = USS[0].distance[2];
-    USS[0].mean = USS[0].mean + USS[0].distance[2];
-
-    if(USS[1].farthest < USS[1].distance[2])
-        USS[1].farthest = USS[1].distance[2];
-    if(USS[1].closest > USS[1].distance[2])
-        USS[1].closest = USS[1].distance[2];
-    USS[1].mean = USS[1].mean + USS[1].distance[2];
-
-    if(USS[2].farthest < USS[2].distance[2])
-        USS[2].farthest = USS[2].distance[2];
-    if(USS[2].closest > USS[2].distance[2])
-        USS[2].closest = USS[2].distance[2];
-    USS[2].mean = USS[2].mean + USS[2].distance[2];
-
-    if(USS[3].farthest < USS[3].distance[2])
-        USS[3].farthest = USS[3].distance[2];
-    if(USS[3].closest > USS[3].distance[2])
-        USS[3].closest = USS[3].distance[2];
-    USS[3].mean = USS[3].mean + USS[3].distance[2];
-
-    if(USS[4].farthest < USS[4].distance[2])
-        USS[4].farthest = USS[4].distance[2];
-    if(USS[4].closest > USS[4].distance[2])
-        USS[4].closest =+ USS[4].distance[2];
-    USS[4].mean = USS[4].mean + USS[4].distance[2];
-
-    // 3
-    if(USS[0].farthest < USS[0].distance[3])
-        USS[0].farthest = USS[0].distance[3];
-    if(USS[0].closest > USS[0].distance[3])
-        USS[0].closest = USS[0].distance[3];
-    USS[0].mean = USS[0].mean + USS[0].distance[3];
-
-    if(USS[1].farthest < USS[1].distance[3])
-        USS[1].farthest = USS[1].distance[3];
-    if(USS[1].closest > USS[1].distance[3])
-        USS[1].closest = USS[1].distance[3];
-    USS[1].mean = USS[1].mean + USS[1].distance[3];
-
-    if(USS[2].farthest < USS[2].distance[3])
-        USS[2].farthest = USS[2].distance[3];
-    if(USS[2].closest > USS[2].distance[3])
-        USS[2].closest = USS[2].distance[3];
-    USS[2].mean = USS[2].mean + USS[2].distance[3];
-
-    if(USS[3].farthest < USS[3].distance[3])
-        USS[3].farthest = USS[3].distance[3];
-    if(USS[3].closest > USS[3].distance[3])
-        USS[3].closest = USS[3].distance[3];
-    USS[3].mean = USS[3].mean + USS[3].distance[3];
-
-    if(USS[4].farthest < USS[4].distance[3])
-        USS[4].farthest = USS[4].distance[3];
-    if(USS[4].closest > USS[4].distance[3])
-        USS[4].closest =+ USS[4].distance[3];
-    USS[4].mean = USS[4].mean + USS[4].distance[3];
-
-    // 4
-    if(USS[0].farthest < USS[0].distance[4])
-        USS[0].farthest = USS[0].distance[4];
-    if(USS[0].closest > USS[0].distance[4])
-        USS[0].closest = USS[0].distance[4];
-    USS[0].mean = USS[0].mean + USS[0].distance[4];
-
-    if(USS[1].farthest < USS[1].distance[4])
-        USS[1].farthest = USS[1].distance[4];
-    if(USS[1].closest > USS[1].distance[4])
-        USS[1].closest = USS[1].distance[4];
-    USS[1].mean = USS[1].mean + USS[1].distance[4];
-
-    if(USS[2].farthest < USS[2].distance[4])
-        USS[2].farthest = USS[2].distance[4];
-    if(USS[2].closest > USS[2].distance[4])
-        USS[2].closest = USS[2].distance[4];
-    USS[2].mean = USS[2].mean + USS[2].distance[4];
-
-    if(USS[3].farthest < USS[3].distance[4])
-        USS[3].farthest = USS[3].distance[4];
-    if(USS[3].closest > USS[3].distance[4])
-        USS[3].closest = USS[3].distance[4];
-    USS[3].mean = USS[3].mean + USS[3].distance[4];
-
-    if(USS[4].farthest < USS[4].distance[4])
-        USS[4].farthest = USS[4].distance[4];
-    if(USS[4].closest > USS[4].distance[4])
-        USS[4].closest = USS[4].distance[4];
-    USS[4].mean = USS[4].mean + USS[4].distance[4];
-
-
-    USS[0].mean = ( USS[0].mean - USS[0].farthest - USS[0].closest ) / 3;
-
-    USS[1].mean = ( USS[1].mean - USS[1].farthest - USS[1].closest ) / 3;
-
-    USS[2].mean = ( USS[2].mean - USS[2].farthest - USS[2].closest ) / 3;
-
-    USS[3].mean = ( USS[3].mean - USS[3].farthest - USS[3].closest ) / 3;
-
-    USS[4].mean = ( USS[4].mean - USS[4].farthest - USS[4].closest ) / 3;
+    for(int i = 0; i< 5; i++)
+        USS[i].mean = ( USS[i].mean - USS[i].farthest - USS[i].closest ) / 3;
 }
 
 int SensorReading()
@@ -936,59 +600,25 @@ int obstacleShape()
 void status()
 {
 /*----------------------------------------- DATA FORMAT: ---------------------------------------------------------------------------
-(bool)left:(bool)right:(bool)speed:(bool)frequency:(int32_t)frequency_l:(uint8_t)pwm_value_l;(int32_t)frequency_r:(uint8_t)pwm_value_r
+frequency:(int32_t)frequency_l:(uint8_t)pwm_value_l;(int32_t)frequency_r:(uint8_t)pwm_value_r
 ----------------------------------------------------------------------------------------------------------------------------------- */	
 	char status[MaxPayload], aux[6]; //
 	int i;
 
-	status[0] = 48+left;
-	status[1] = ' ';
-	status[2] = '\0';
-
-/*
-	status[0] = 48+left;
-	status[1] = 'L';
-	status[2] = 48+frequency;
-	status[3] = 'F';
-	status[4] = 48+speed;
-	status[5] = 'S';
-	status[6] =  48+right;
-	status[7] =  'R';
-	status[8] = ':';
-	status[9] = '\0';
-*/
-
-/*
-	int2char(aux,frequency_l);
-	append(status,aux);
-	append(status,"F");
-*/
+	status[0] = '\0';
 
 	int2char(aux,pwm_value_l);
 	append(status,aux);
 	append(status,"S|");
 
-	aux[0] = 48+right;
-	aux[1] = ' ';
-	aux[2] = '\0';
+	aux[0] = '\0';
 	append(status,aux);
-
-/*
-	int2char(aux,frequency_r);
-	append(status,aux);
-	append(status,"f");
-*/
 
 	int2char(aux,pwm_value_r);
 	append(status,aux);
 	append(status,"S ");
 
-	aux[0] = 's';
-	aux[1] = 48+speed;
-	aux[2] = ' ';
-	aux[3] = 'f';
-	aux[4] = 48+frequency;
-	aux[5] = '\0';
+	aux[0] = '\0';
 	append(status,aux);
 
 	write_ackPayload(status);
@@ -999,14 +629,12 @@ void communication()
 {
     if(select) // robot
     {
-        if(!read_nonBlocking()) // if there is a message for us
-            processing();
+        read_Blocking();
+        processing();
     }
     else // remote controller
-    {
-        if( write_nonBlocking() ) // failed to send?
-           radio.write( cmd, sizeof(cmd) ); // try again. 
-    }
+        if( write_nonBlocking() )
+            Serial.println("fail");
 }
 
 
@@ -1017,27 +645,15 @@ void action(int n)
 		switch(n)
         {
             case 0: //	   left
-                left = 1;
-                right = 0;
-                write_ackPayload("left motor!");
                 break;
 
             case 1: //	   right
-                left = 0;
-                right = 1;
-                write_ackPayload("right motor!");
                 break;
 
             case 2: //	   both
-                left = 1;
-                right = 1;
-                write_ackPayload("both motors!");
                 break;
 
             case 3: //	   speed
-                speed = 1;
-                frequency = 0;
-                write_ackPayload("enter speed value.");
                 break;
 
             case 4: //	   start
@@ -1051,7 +667,6 @@ void action(int n)
                 break;
 
             case 6: //	   sweep
-                sweep();
                 break;
 
             case 7: //	  status 
@@ -1059,9 +674,6 @@ void action(int n)
                 break;
 
             case 8: //	 frequency 
-                speed = 0;
-                frequency = 1;
-                write_ackPayload("enter frequency value.");
                 break;
             case 9: //	 safety button status 
                 if(safety_button)
@@ -1077,15 +689,12 @@ void action(int n)
                 autonomous();
                 break;
             case 12: //	log
-                logging();
                 break;
                 
             case 13: // test	
-                test();
                 break;
                 
             case 14: // autonomous navigation without USS data feedback to remote controller
-                quiet();
                 break;
 
             case 15: // toggle the number of USS being used for decision making
@@ -1102,76 +711,6 @@ void stop()
 {
     pwmWrite(rightmotor, stop_pwm_r);  // pwmWrite(pin, DUTY * 255 / 100);
     pwmWrite(leftmotor, stop_pwm_l);
-}
-
-void sweep()
-{
-    bool ok = 0;
-    int i = pwm_value_r, j = pwm_value_l;
-    int r = pwm_value_r, l = pwm_value_l;
-
-    pwm_value_r = stop_pwm_r;
-    pwm_value_l = stop_pwm_l;
-
-    while(!ok)
-    {
-        if(i > pwm_value_r || j > pwm_value_l)
-        {
-            if(i > pwm_value_r && j > pwm_value_l)
-            {
-                pwmWrite(rightmotor, pwm_value_r);
-                pwmWrite(leftmotor, pwm_value_l);
-                pwm_value_r++;
-                pwm_value_l++;
-            }
-            if(i > pwm_value_r && !(j > pwm_value_l))
-            {
-                pwmWrite(rightmotor, pwm_value_r);
-                pwm_value_r++;
-            }
-            if(!(i > pwm_value_r) && j > pwm_value_l)
-            {
-                pwmWrite(leftmotor, pwm_value_l);
-                pwm_value_l++;
-            }
-            delay(50);
-        }
-        else
-            ok = 1;
-    }
-
-    ok = 0;
-    i = stop_pwm_r;
-    j = stop_pwm_l;
-
-    while(!ok)
-    {
-        if(i < pwm_value_r || j < pwm_value_l)
-        {
-            if(i < pwm_value_r && j < pwm_value_l)
-            {
-                pwmWrite(rightmotor, pwm_value_r);
-                pwmWrite(leftmotor, pwm_value_l);
-                pwm_value_r--;
-                pwm_value_l--;
-            }
-            if(i < pwm_value_r && !(j < pwm_value_l))
-            {
-                pwmWrite(rightmotor, pwm_value_r);
-                pwm_value_r--;
-            }
-            if(!(i < pwm_value_r) && j < pwm_value_l)
-            {
-                pwmWrite(leftmotor, pwm_value_l);
-                pwm_value_l--;
-            }
-            delay(50);
-        }
-        else
-            ok = 1;
-    }
-    pwm_value_r = r;
-    pwm_value_l = l;
 }
 
 void start()
@@ -1231,6 +770,7 @@ void start()
 
 bool processing()
 {
+
 	int i;
 	for(i = 0; i < Ncommands; i++) // search for a known command
 		if(isSubstring(intCmd[i],rcv) == 1)
@@ -1238,87 +778,18 @@ bool processing()
 
 	if(i < Ncommands) // have we just got a command?
 		action(i); // yes, perform i-th command 
-	else // not a command, maybe it is data
-    {
-        int number = char2int(rcv);
-
-        if( number > 0 ) 
+    else if(((rcv[0]=='+' || rcv[0]=='-')  && (rcv[1]=='\0')))  // have we received safety button status?
+    {	
+        if(rcv[0] == '+')
+            safety_button = 1;
+        else
         {
-             if(speed)
-            {
-                if(left)
-                {
-                    pwm_value_l = number;
-                    speed = 0;
-                    if(right)
-                        append(rcv," (both pwm)");
-                    else
-                        append(rcv," (left pwm)");
-                    write_ackPayload(rcv);
-                }
-                if(right)
-                {
-                    pwm_value_r = number;
-                    speed = 0;
-                    if(!left)
-                    {
-                        append(rcv," (right pwm)");
-                        write_ackPayload(rcv);
-                    }
-                }
-
-                if( !(right || left) )
-                    write_ackPayload("set for which motor?");
-
-            }
-            else if(frequency)
-            {
-                if(left)
-                {
-                    frequency_l = number;
-                    frequency = 0;
-                    SetPinFrequencySafe(leftmotor, frequency_l);
-                    if(right)
-                        append(rcv," (freq L and R)");
-                    else
-                        append(rcv," (freq L)");
-                    write_ackPayload(rcv);
-                }
-
-                if(right)
-                {
-                    frequency_r = number;
-                    frequency = 0;
-                    SetPinFrequencySafe(rightmotor, frequency_r);
-                    if(!left)
-                    {
-                        append(rcv," (freq R)");
-                        write_ackPayload(rcv);
-                    }
-                }
-                if( !(right || left) )
-                    write_ackPayload("set for which motor?");
-            }
-            else // what is this number for?
-                write_ackPayload(rcv); // send it back!
-        }
-        else if( (  (rcv[0]=='+' || rcv[0]=='-')  && (rcv[1]=='\0')  )  )  // have we received safety button status?
-        {	
-            radio.writeAckPayload( 1, cmd, sizeof(cmd) ); // resend previous message to remote controller, maybe the last one got lost...
-            if(rcv[0] == '+')
-                safety_button = 1;
-            else
-            {
-                safety_button = 0;
-                return 1;
-            }
-        }
-        else // nothing recognizable, send it back
-        {	
-            write_ackPayload(rcv);
+            safety_button = 0;
+            return 1;
         }
     }
-
+    else
+        write_ackPayload(rcv);
     return 0;
 }
 
@@ -1340,13 +811,17 @@ bool checkButton()
 
 void set_msg()
 {
+    cmd[0] = '\0';
     // if(Serial.available() == 0 && cmd[0] == '\0')
     if( Serial.available() )
     {
-        delay(1);
+        delay(5);
         int aux = 0;
         while(Serial.available() > 0)
-            cmd[aux++] = Serial.read();
+            if(aux < MaxPayload)
+                cmd[aux++] = Serial.read();
+            else
+                break;
         cmd[aux] = '\0';
 
         if(aux != 0 && isSubstring("clear", cmd) )
@@ -1356,10 +831,12 @@ void set_msg()
             cmd[0] = '\0';
         }
     }
+/*
     else if(rcv[0] == '{') // metadata asking for safety button status
     {
-            checkButton();
+           //  checkButton();
     }
+*/
     else if(millis() > t + t_max )
     {
         checkButton();
@@ -1367,16 +844,6 @@ void set_msg()
     }
 }
 
-void copyString(char *o, char *c)
-{
-    int i;
-    for(i = 0; i < MaxPayload; i++)
-    {
-       c[i] = o[i];
-        if(o[i] == '\0')
-            break;
-    }
-}
 
 void write_ackPayload(char *m)
 {
@@ -1385,123 +852,6 @@ void write_ackPayload(char *m)
         copyString(m,cmd);
         radio.writeAckPayload( 1, cmd, sizeof(cmd) );
     }
-}
-
-int mypow(int base, int exponent)
-{
-    int result = 1;
-    for(int i = 0; i < exponent; i++)
-        result = result*base;
-    return result;
-}
-
-// TODO: make it generic
-int char2int(char *s)
-{
-
-    /*
-       int r = 0;
-
-       if(s[1] == '\0')
-       {
-       if(s[0] >= '0' && s[0] <= '9')
-       {
-       r = (s[0] - 48);
-       return r;
-       }
-       return -1;
-       }
-
-       if(s[2] == '\0')
-       {
-       if(s[0] >= '0' && s[0] <= '9' && s[1] >= '0' && s[1] <= '9')
-       {
-       r = (s[1] - 48) + (s[0] - 48)*10;
-       return r;
-       }
-       return -1;
-       }
-
-       if(s[3] == '\0')
-       {
-       if(s[0] >= '0' && s[0] <= '9' && s[1] >= '0' && s[1] <= '9' && s[2] >= '0' && s[2] <= '9')
-       {
-       r = (s[2] - 48) + (s[1] - 48)*10 + (s[0] - 48)*100 ;
-       return r;
-       }
-       return -1;
-       }
-
-       return -2;
-     */
-
-    int i = 0,j, r = 0, aux;
-
-    for(i = 0; i < MaxPayload; i++)
-    {
-        if( !((s[i] >= '0') && (s[i] <= '9')) ) // is it a number?
-        {
-            if(s[i] == '\0')
-                break;
-            else
-                return -1;
-        }
-    }
-
-    if(i == MaxPayload) // number too big for this application
-        return -3;
-
-    if(i == 0) // empty string
-        return -2;
-
-    for(j=0; j < i; j++)
-    {
-        aux = (int) s[j];
-        aux -= 48;
-        aux *= (int) mypow(10,i-1-j);
-        r += aux;
-    }
-    return r;
-}
-
-void int2char(char *o,int n)
-{
-	int i = 1, aux = 10, j;
-	if(n >= 0)
-	{
-		while(n/i > 9)
-			i *=10;
-		for(j = 0; i>0; j++)
-		{
-			aux = n/i;
-			o[j] = aux+48;
-			n -= aux*i;
-			i /= 10;
-		}
-		o[j] = '\0';
-
-	}
-	else // negative values aren't useful for this application
-		o[0] = '\0';
-}
-
-void append(char *o, char *p)
-{
-	int i,j,k;
-	for(i = 0; i < MaxPayload; i++)
-		if(o[i] == '\0')
-			break;
-
-	for(j = 0; j < MaxPayload; j++)
-		if(p[j] == '\0')
-			break;
-
-	if( i+j <= MaxPayload)
-	{
-		for(k = 0; k < j ;k++)
-			o[i+k] = p[k];
-		o[i+k] = '\0';
-	}
 }
 
 void setInternalCommands(char**m)
@@ -1519,36 +869,9 @@ void setInternalCommands(char**m)
 	copyString("button",m[9]);
 	copyString("dist",m[10]);
 	copyString("auto",m[11]);
-	copyString("log",m[12]);
-	copyString("test",m[13]);
-	copyString("quiet",m[14]);
-
-	copyString("USS",m[15]);
+	copyString("USS",m[12]);
 }
 
-bool isSubstring(char *a, char *b)
-{
-	int i;
-
-	if((a[0] == '\0')||(b[0] == '\0'))
-	{
-		return 0;
-	}	
-
-	for(i = 0; i < MaxPayload; i++ )
-	{
-		if((a[i] == '\0')||(b[i] == '\0'))
-			if((a[i] == '\0')&&(b[i] == '\0'))
-				return 1;
-			else
-			{
-				return 0;
-			}
-		if(a[i] != b[i])
-			return 0;
-	}
-	return 1;
-}
 
 bool read_nonBlocking() // robot
 {
@@ -1572,11 +895,11 @@ void read_Blocking() // robot
 
 bool write_nonBlocking()
 {
-    bool check;
+    bool check = 1;
     if( radio.isAckPayloadAvailable() ) // should I do it outside this function??
     {
       radio.read(&rcv,sizeof(rcv));
-      if(!isSubstring(copy,rcv) && rcv[0] != '\0' && rcv[0] != '#') // is it something new?
+     //  if(!isSubstring(copy,rcv) && rcv[0] != '\0' && rcv[0] != '#') // is it something new?
       {
           Serial.println(rcv);
           copyString(rcv,copy);
@@ -1584,8 +907,8 @@ bool write_nonBlocking()
     }
 
     set_msg();
-    check = radio.write( cmd, sizeof(cmd));
-    cmd[0] = '\0';
+    if(cmd[0] != '\0')
+        check = radio.write( cmd, sizeof(cmd));
 
     return !check; // return 0 if successful.
 }
@@ -1595,14 +918,6 @@ void statusFeedback(char iteration)
     int OS = obstacleShape();
     char aux[15];
 
-/*
-     aux[0] = '{';
-     aux[1] = iteration;
-     aux[2] = '}';
-     aux[3] = '\0';
-     append(cmd,aux);
-     append(cmd," ");
-*/
      aux[0] = '{';
      aux[1] = '\0';
      append(cmd,aux);
@@ -1642,65 +957,6 @@ void statusFeedback(char iteration)
         else
             append(cmd,"OR ");
     }
-
-/*
-    // Obstacle Shape
-    if(OS >= 16)
-    {
-        OS = OS-16;
-        if(USS[4].mean < minDist)
-            append(cmd,"!");
-        else
-            append(cmd,"1");
-    }
-    else
-        append(cmd,"0");
-
-    if(OS >= 8)
-    {
-        OS = OS-8;
-        if(USS[3].mean < minDist)
-            append(cmd,"!");
-        else
-            append(cmd,"1");
-    }
-    else
-        append(cmd,"0");
-
-    if(OS >= 4)
-    {
-        OS = OS-4;
-        if(USS[2].mean < minDist)
-            append(cmd,"!");
-        else
-            append(cmd,"1");
-    }
-    else
-        append(cmd,"0");
-
-    if(OS >= 2)
-    {
-        OS = OS-2;
-        if(USS[1].mean < minDist)
-            append(cmd,"!");
-        else
-            append(cmd,"1");
-    }
-    else
-        append(cmd,"0");
-
-    if(OS >= 1)
-    {
-        OS = OS-1;
-        if(USS[0].mean < minDist)
-            append(cmd,"!");
-        else
-            append(cmd,"1");
-    }
-    else
-        append(cmd,"0");
-*/
-
 
     radio.writeAckPayload(1,cmd,sizeof(cmd));
     rcv[0] = '\0';
@@ -1749,114 +1005,6 @@ void autonomous()
     write_ackPayload("#");
 }
 
-
-void quiet()
-{
-    t = millis();
-    while(millis() < t + t_start)
-    {
-        ObstacleAvoid();
-
-        if(radio.available())
-        {
-            bool done = false;
-            while (!done && millis() < t + t_start)
-                done = radio.read( rcv, sizeof(rcv) );
-
-            if(rcv[0] == '-')
-            {
-                stop();
-                write_ackPayload("#");
-                break;
-            }
-
-            if(rcv[0] == '+')
-                t = millis();
-        }
-
-    }
-    stop();
-    write_ackPayload("#");
-}
-
-void logging()
-{
-    t = millis();
-    while(millis() < t + t_start)
-    {
-        for(int i = 0; i < buffer_size; i++)
-        {
-            ObstacleAvoid();
-            buffer[i][0] = USS[0].mean;
-            buffer[i][1] = USS[1].mean;
-            buffer[i][2] = USS[2].mean;
-            buffer[i][3] = USS[3].mean;
-            buffer[i][4] = USS[4].mean;
-        }
-        stop();
-
-        flushLogData(0);
-        for(int i = 1; i < buffer_size; i++)
-        {
-            read_Blocking();
-            flushLogData(i);
-
-            if(rcv[0] == '-')
-            {
-                write_ackPayload("#");
-                stop();
-                break;
-            }
-
-            if(rcv[0] == '+')
-                t = millis();
-        }
-
-//TODO: check if indeed necessary...
-        if(radio.available())
-        {
-            bool done = false;
-            while (!done && millis() < t + t_start)
-                done = radio.read( rcv, sizeof(rcv) );
-
-            if(rcv[0] == '-')
-            {
-                stop();
-                write_ackPayload("#");
-                break;
-            }
-
-            if(rcv[0] == '+')
-                t = millis();
-        }
-    }
-    stop();
-}
-
-void flushLogData(int N_buffer)
-{
-    char aux[5];
-    cmd[0] = '{'; 
-    cmd[1] = '\0';
-    int2char(aux,N_buffer);
-    append(cmd,aux);
-    append(cmd,"} ");
-    int2char(aux,buffer[N_buffer][4]);
-    append(cmd,aux);
-    append(cmd,"|");
-    int2char(aux,buffer[N_buffer][3]);
-    append(cmd,aux);
-    append(cmd,"|");
-    int2char(aux,buffer[N_buffer][2]);
-    append(cmd,aux);
-    append(cmd,"|");
-    int2char(aux,buffer[N_buffer][1]);
-    append(cmd,aux);
-    append(cmd,"|");
-    int2char(aux,buffer[N_buffer][0]);
-    append(cmd,aux);
-    radio.writeAckPayload( 1, cmd, sizeof(cmd) );
-}
 
 void writeSensorsData()
 {
@@ -1925,49 +1073,6 @@ void SensorsDataPrint()
             iteration++;
     }
 }
-
-void test()
-{
-    t = millis();
-    while(millis() < t + t_start)
-    {
-
-        for(int i = 1; i < buffer_size; i = i+2)
-        {
-            SensorReading();
-            buffer[i-1][0] = USS[0].distance[USS[0].pointer];
-            buffer[i-1][1] = USS[1].distance[USS[1].pointer];
-            buffer[i-1][2] = USS[2].distance[USS[2].pointer];
-            buffer[i-1][3] = USS[3].distance[USS[3].pointer];
-            buffer[i-1][4] = USS[4].distance[USS[4].pointer];
-
-            buffer[i][0] = USS[0].mean;
-            buffer[i][1] = USS[1].mean;
-            buffer[i][2] = USS[2].mean;
-            buffer[i][3] = USS[3].mean;
-            buffer[i][4] = USS[4].mean;
-        }
-
-        flushLogData(0);
-
-        for(int i = 1; i < buffer_size; i++)
-        {
-            read_Blocking();
-            flushLogData(i);
-
-            if(rcv[0] == '-')
-            {
-                write_ackPayload("#");
-                break;
-            }
-
-            if(rcv[0] == '+')
-                t = millis();
-        }
-    }
-}
-
-
 
 void ObstacleAvoidanceTechnique(int obstacle_avoidance_method, int obstacle)
 {
