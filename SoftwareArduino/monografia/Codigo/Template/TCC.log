@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.5.30)  4 APR 2017 09:38
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.5.30)  23 APR 2017 14:28
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1202,8 +1202,8 @@ File: ../../Imagens/nordicc.png Graphic file (type png)
 
 <use ../../Imagens/nordicc.png>
 Package pdftex.def Info: ../../Imagens/nordicc.png used on input line 139.
-(pdftex.def)             Requested size: 318.49861pt x 318.51094pt.
- [30] [31 <../../Imagens/nordicc.png>])
+(pdftex.def)             Requested size: 227.5pt x 227.50343pt.
+ [30 <../../Imagens/nordicc.png>] [31])
 (../Metodos/Metodos.tex [32] [33
 
 ] [34] [35]) (../Resultados/Resultados.tex
@@ -1276,12 +1276,10 @@ File: ../../Imagens/PWM_modulation_types.png Graphic file (type png)
 
 <use ../../Imagens/PWM_modulation_types.png>
 Package pdftex.def Info: ../../Imagens/PWM_modulation_types.png used on input l
-ine 200.
+ine 201.
 (pdftex.def)             Requested size: 318.49861pt x 222.94159pt.
-) (../Anexos/Anexos.tex
-Underfull \vbox (badness 2318) has occurred while \output is active []
-
- [52 <../../Imagens/PWM_modulation_types.png (PNG copy)>] [53] [54
+ [52 <../../Imagens/PWM_modulation_types.png (PNG copy)>]) (../Anexos/Anexos.te
+x [53] [54
 
 ])
 
@@ -1308,11 +1306,11 @@ LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 327.
  ) 
 Here is how much of TeX's memory you used:
- 13587 strings out of 494929
- 198527 string characters out of 6180142
+ 13589 strings out of 494929
+ 198551 string characters out of 6180142
  368892 words of memory out of 5000000
  16259 multiletter control sequences out of 15000+600000
- 113550 words of font info for 149 fonts, out of 8000000 for 9000
+ 113680 words of font info for 150 fonts, out of 8000000 for 9000
  16 hyphenation exceptions out of 8191
  45i,13n,35p,433b,619s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/en
@@ -1328,7 +1326,7 @@ are/texmf/fonts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/public/l
 m/lmr9.pfb></usr/share/texmf/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf
 /fonts/type1/public/lm/lmri9.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10
 .pfb></usr/share/texmf/fonts/type1/public/lm/lmsy8.pfb>
-Output written on TCC.pdf (57 pages, 1269197 bytes).
+Output written on TCC.pdf (57 pages, 1269920 bytes).
 PDF statistics:
  911 PDF objects out of 1000 (max. 8388607)
  819 compressed objects within 9 object streams
