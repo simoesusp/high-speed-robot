@@ -66,7 +66,7 @@ int lowSpeed_r =  100;
 #define buffer_size 50
 
 // --------- deadlines (in millisseconds)----------------------------
-#define t_max 100  // TODO: give it a better name
+#define t_max 75  // TODO: give it a better name
 #define t_start 500 // deadline for loss of radio connection when running - autonomous() as well as start() -
 #define time_out 30 // USS reading deadline <=> 6.8m (datasheet fala que só vai até 4m...)
 
@@ -159,12 +159,11 @@ void autonomous();
 void communication();
 bool read_nonBlocking();
 void read_Blocking();
-bool write_nonBlocking();
 void statusFeedback(char);
 void writeSensorsData();
 
 //---------- string handling functions -------------
-void write_ackPayload(char*);
+bool ToBeSubstituted(char*);
 
 void set_msg(); // transmits Serial.read() or safety button status - remote controller
 void setInternalCommands(char**); // robot commands
@@ -180,7 +179,7 @@ void SensorSettings();
 int myPulseIn(bool);
 int SensorReading();
 void getExtreamValues();
-void SensorsDataPrint();
+void printSensorsData();
 int obstacleShape();
 void speedControl(int);
 void initTable(short int *);
@@ -192,16 +191,15 @@ void setup()
     //------------------------ nRF24L01+ transceiver Settings -----------
 	Serial.begin(115200);
 	radio.begin();
-    radio.setDataRate(RF24_2MBPS);
+    radio.setDataRate(RF24_1MBPS);
 	radio.enableAckPayload();
     radio.setPALevel(RF24_PA_MAX);
-    radio.setRetries(8,15);
+    radio.setRetries(4,15);
     //---------------------------------------------------------------
 
 	if(select) // robot
     {
-        radio.openReadingPipe(1,pipe);
-        radio.startListening();
+        radio.openWritingPipe(pipe);
         //------------------------ Ultrasound Sensors Settings -----------
 
         //sets ultrasonic ranging module pins, all 5 sensors share trigPin.
@@ -252,7 +250,8 @@ void setup()
     }
     else // remote controller
     {
-        radio.openWritingPipe(pipe);
+        radio.openReadingPipe(1,pipe);
+        radio.startListening();
         pinMode(ON, OUTPUT);
         pinMode(OFF, OUTPUT);
         pinMode(state, INPUT);
@@ -260,7 +259,6 @@ void setup()
         digitalWrite(ON, HIGH);
         digitalWrite(OFF, LOW);
 
-        copy[0] = '\0'; // TODO: is it really necessary???
     }
 
 
@@ -514,7 +512,7 @@ void speedControl(int obstacle)
             break;
         
         default: // not supposed to enter here
-            write_ackPayload("ERROR!!!");
+            ToBeSubstituted("ERROR!!!");
             stop();
             break;
     }
@@ -621,7 +619,7 @@ frequency:(int32_t)frequency_l:(uint8_t)pwm_value_l;(int32_t)frequency_r:(uint8_
 	aux[0] = '\0';
 	append(status,aux);
 
-	write_ackPayload(status);
+	ToBeSubstituted(status);
 
 }
 
@@ -629,14 +627,23 @@ void communication()
 {
     if(select) // robot
     {
-        read_Blocking();
-        processing();
+        if( radio.isAckPayloadAvailable() ) // should I do it outside this function??
+        {
+            radio.read(rcv,sizeof(rcv));
+            processing();
+        }
+        else
+        {
+            ToBeSubstituted("!");
+        }
+
     }
     else // remote controller
-        if( write_nonBlocking() )
-            Serial.println("fail");
+    {
+        read_nonBlocking();
+        set_msg();
+    }
 }
-
 
 void action(int n)
 {
@@ -657,13 +664,13 @@ void action(int n)
                 break;
 
             case 4: //	   start
-                write_ackPayload("here we go!");
+                ToBeSubstituted("here we go!");
                 start();
                 break;
 
             case 5: //	   stop
                 stop();
-                write_ackPayload("stop!!!");
+                ToBeSubstituted("stop!!!");
                 break;
 
             case 6: //	   sweep
@@ -677,15 +684,15 @@ void action(int n)
                 break;
             case 9: //	 safety button status 
                 if(safety_button)
-                    write_ackPayload("ON");
+                    ToBeSubstituted("ON");
                 else
-                    write_ackPayload("OFF");
+                    ToBeSubstituted("OFF");
                 break;
             case 10: // dist <=> print USS data  
-                SensorsDataPrint();
+                printSensorsData();
                 break;
             case 11: //	obstacle avoidance 
-                write_ackPayload("autonomous navigation");
+                ToBeSubstituted("autonomous navigation");
                 autonomous();
                 break;
             case 12: //	log
@@ -700,9 +707,9 @@ void action(int n)
             case 15: // toggle the number of USS being used for decision making
                 all_sensors = ! all_sensors;
                 if(all_sensors)
-                    write_ackPayload("using 5 USS.");
+                    ToBeSubstituted("using 5 USS.");
                 else
-                    write_ackPayload("using 3 USS.");
+                    ToBeSubstituted("using 3 USS.");
                 break;
         }
 }
@@ -719,7 +726,7 @@ void start()
     bool safe = 0;
 
     t = millis();
-    write_ackPayload("{");
+    ToBeSubstituted("{");
     while(millis() < t + t_start)
     {
         if( SensorReading() < 0)
@@ -741,7 +748,7 @@ void start()
 
         }
 
-        if(radio.available())
+        if(radio.isAckPayloadAvailable())
         {
             bool done = false;
             while (!done && millis() < t + t_start)
@@ -750,7 +757,7 @@ void start()
 
         if(rcv[0] == '-')
         {
-            write_ackPayload("#");
+            ToBeSubstituted("#");
             break;
         }
 
@@ -765,7 +772,7 @@ void start()
             iteration++;
     }
     stop();
-    write_ackPayload("#");
+    ToBeSubstituted("#");
 }
 
 bool processing()
@@ -789,30 +796,31 @@ bool processing()
         }
     }
     else
-        write_ackPayload(rcv);
+        ToBeSubstituted(rcv);
     return 0;
 }
 
 bool checkButton()
 {
+    t = millis();
     if(digitalRead(state) == HIGH)
     {
         cmd[0] = '+';
         cmd[1] = '\0';
+        radio.writeAckPayload(1,cmd,sizeof(cmd));
         return 1;
     }
     else
     {
         cmd[0] = '-';
         cmd[1] = '\0';
+        radio.writeAckPayload(1,cmd,sizeof(cmd));
         return 0;
     }
 }
 
 void set_msg()
 {
-    cmd[0] = '\0';
-    // if(Serial.available() == 0 && cmd[0] == '\0')
     if( Serial.available() )
     {
         delay(5);
@@ -830,29 +838,12 @@ void set_msg()
                 Serial.println(" ");
             cmd[0] = '\0';
         }
-    }
-/*
-    else if(rcv[0] == '{') // metadata asking for safety button status
-    {
-           //  checkButton();
-    }
-*/
-    else if(millis() > t + t_max )
-    {
-        checkButton();
-        t = millis();
+        else if(cmd[0] != '\0')
+            radio.writeAckPayload(1,cmd,sizeof(cmd));
     }
 }
 
 
-void write_ackPayload(char *m)
-{
-    if( m[0] != '\0' )
-    {
-        copyString(m,cmd);
-        radio.writeAckPayload( 1, cmd, sizeof(cmd) );
-    }
-}
 
 void setInternalCommands(char**m)
 {
@@ -873,15 +864,22 @@ void setInternalCommands(char**m)
 }
 
 
-bool read_nonBlocking() // robot
+bool read_nonBlocking() // remote controller
 {
 	if(radio.available())
     {
         bool done = false;
         while (!done)
             done = radio.read( rcv, sizeof(rcv) );
+
+        if(rcv[0] != '!') // if robot not waiting for command
+            Serial.println(rcv);
+
         return 0; // success
-    }
+    } 
+    else if(millis() > t + t_max)
+        checkButton();
+
     return 1; // nothing to be read 
 }
 
@@ -893,25 +891,6 @@ void read_Blocking() // robot
         done = radio.read( rcv, sizeof(rcv) );
 }
 
-bool write_nonBlocking()
-{
-    bool check = 1;
-    if( radio.isAckPayloadAvailable() ) // should I do it outside this function??
-    {
-      radio.read(&rcv,sizeof(rcv));
-     //  if(!isSubstring(copy,rcv) && rcv[0] != '\0' && rcv[0] != '#') // is it something new?
-      {
-          Serial.println(rcv);
-          copyString(rcv,copy);
-      }
-    }
-
-    set_msg();
-    if(cmd[0] != '\0')
-        check = radio.write( cmd, sizeof(cmd));
-
-    return !check; // return 0 if successful.
-}
 
 void statusFeedback(char iteration)
 {
@@ -971,12 +950,12 @@ void autonomous()
     status[0] = '\0';
 
     t = millis();
-    write_ackPayload("{");
+    ToBeSubstituted("{");
     while(millis() < t + t_start)
     {
         ObstacleAvoid();
 
-        if(radio.available())
+        if(radio.isAckPayloadAvailable())
         {
             bool done = false;
             while (!done && millis() < t + t_start)
@@ -985,7 +964,7 @@ void autonomous()
             if(rcv[0] == '-')
             {
                 stop();
-                write_ackPayload("#");
+                ToBeSubstituted("#");
                 break;
             }
 
@@ -1002,7 +981,7 @@ void autonomous()
 
     }
     stop();
-    write_ackPayload("#");
+    ToBeSubstituted("#");
 }
 
 
@@ -1027,7 +1006,7 @@ void writeSensorsData()
     append(cmd," ");
 }
 
-void SensorsDataPrint()
+void printSensorsData()
 {
     int i;
     char status[MaxPayload], aux[6],iteration = '0';
@@ -1045,23 +1024,34 @@ void SensorsDataPrint()
 
         for (i = 0; i < 5; i++)
         {
-            int2char(aux,USS[4-i].distance[USS[4-i].pointer]);
-            //int2char(aux,USS[4-i].mean);
+            int2char(aux,USS[i].distance[USS[i].pointer]);
+            //int2char(aux,USS[i].mean);
             append(status,aux);
             if(i<4)
                 append(status,"|");
         }
 
-        read_nonBlocking();
-        if(rcv[0] == '-')
+        while(!ToBeSubstituted(status));
+        if(radio.isAckPayloadAvailable());
         {
-            write_ackPayload("#");
-            break;
-        }
-        if(rcv[0] == '+')
-            t = millis();
+            bool done = false;
+            while (!done)
+                done = radio.read( rcv, sizeof(rcv) );
 
-        write_ackPayload(status);
+            if(rcv[0] == '-')
+            {
+                stop();
+                ToBeSubstituted("#");
+                break;
+            } 
+            else if(rcv[0] == '+')
+            {
+                t = millis();
+            }
+
+            rcv[0] = '\0';
+        }
+
         myPulseIn(dyn);
         getExtreamValues();
         rcv[0] = '\0';
@@ -1108,6 +1098,18 @@ void proportionalController()
     append(status,aux);
 	int2char(aux,rightSpeed);
     append(status,aux);
-    write_ackPayload(status);
+    ToBeSubstituted(status);
 
+}
+
+bool ToBeSubstituted(char *m)
+{
+    if( m[0] != '\0' )
+    {
+        bool check;
+        copyString(m,cmd);
+        check = radio.write(cmd, sizeof(cmd) );
+        return check;
+    }
+    return 0;
 }
