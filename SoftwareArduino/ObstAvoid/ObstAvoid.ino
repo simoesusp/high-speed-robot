@@ -114,7 +114,7 @@ int pwm_value_r = 330;    // right motor  pwm_value  = Motor Stopped   :  Pulse 
 int pwm_value_l = 104;    // left motor  pwm_value  = Motor Stopped   :  Pulse Width = 1ns
 
 bool dyn = 1; // dynamical/fixed USS echo reading
-bool all_sensors = 0;
+bool all_sensors = 1;
 
 int obstacle_avoidance_method = 0;
 // -------- communication related variables -----------------
@@ -162,7 +162,7 @@ void autonomous();
 // -------- communication oriented functions -------
 void communication();
 bool read_nonBlocking();
-void read_Blocking();
+void read_blocking();
 bool write_nonBlocking();
 void statusFeedback(char);
 void writeSensorsData();
@@ -471,7 +471,6 @@ void initTable(short int *T)
 
 void speedControl(int obstacle)
 {
-//TODO: talvez compense tirar o switch e colocar if
     switch (T[obstacle])
     {
         case (E_L):
@@ -547,26 +546,14 @@ int SensorReading()
     myPulseIn(dyn);
     getExtreamValues();
 
-    if(USS[0].mean < minDist)
+    if((USS[0].mean < minDist) || (USS[2].mean < minDist) || (USS[4].mean < minDist))
         return -1;
 
     if(all_sensors)
     {
-        if(USS[1].mean < minDist)
+        if((USS[1].mean < minDist) ||(USS[3].mean < minDist))
             return -1;
     }
-
-    if(USS[2].mean < minDist)
-        return -1;
-
-    if(all_sensors)
-    {
-        if(USS[3].mean < minDist)
-            return -1;
-    }
-
-    if(USS[4].mean < minDist)
-        return -1;
 
     return obstacleShape();
 }
@@ -579,19 +566,15 @@ int obstacleShape()
         obstacle += B00001; // 1st bit <=> 1st sensor
 
     if(all_sensors)
-    {
         if (USS[1].mean < warningDist) 
             obstacle += B00010; // 2nd bit <=> 2nd sensor
-    }
 
     if (USS[2].mean < warningDist) 
         obstacle += B00100; // 3rd bit <=> 3rd sensor
 
     if(all_sensors)
-    {
         if (USS[3].mean < warningDist) 
             obstacle += B01000; // 4th bit <=> 4th sensor
-    }
 
     if (USS[4].mean < warningDist) 
         obstacle += B10000; // 5th bit <=> 5th sensor
@@ -646,7 +629,7 @@ void communication()
 {
     if(select) // robot
     {
-        read_Blocking();
+        read_blocking();
         processing();
     }
     else // remote controller
@@ -723,7 +706,7 @@ void stop()
 
 void start()
 {
-    char iteration = '0'; // check for packet loss
+    char iteration = 'a'; // check for packet loss
     bool safe = 0;
 
     t = millis();
@@ -767,8 +750,8 @@ void start()
 
         statusFeedback(iteration);
         rcv[0] = '\0';
-        if (iteration == '9')
-            iteration = '0';
+        if (iteration == 'z')
+            iteration = 'a';
         else 
             iteration++;
     }
@@ -822,7 +805,6 @@ bool checkButton()
 void set_msg()
 {
     cmd[0] = '\0';
-    // if(Serial.available() == 0 && cmd[0] == '\0')
     if( Serial.available() )
     {
         delay(5);
@@ -841,12 +823,6 @@ void set_msg()
             cmd[0] = '\0';
         }
     }
-/*
-    else if(rcv[0] == '{') // metadata asking for safety button status
-    {
-           //  checkButton();
-    }
-*/
     else if(millis() > t + t_max )
     {
         checkButton();
@@ -890,7 +866,7 @@ bool read_nonBlocking() // robot
     return 1; // nothing to be read 
 }
 
-void read_Blocking() // robot
+void read_blocking() // robot
 {
     while(!radio.available());
     bool done = false;
@@ -903,10 +879,13 @@ bool write_nonBlocking()
     bool check = 1;
     if( radio.isAckPayloadAvailable() ) // should I do it outside this function??
     {
-      radio.read(&rcv,sizeof(rcv));
-      {
+      // radio.read(&rcv,sizeof(rcv));
+      // {
+        bool done = 0;
+        while (!done)
+            done = radio.read( rcv, sizeof(rcv) );
           Serial.println(rcv);
-      }
+      // }
     }
 
     set_msg();
@@ -919,6 +898,7 @@ bool write_nonBlocking()
 void statusFeedback(char iteration)
 {
     char aux[5];
+    int percentualSpeed;
     cmd[0] = '\0';
     aux[0] = '\0';
 
@@ -930,23 +910,37 @@ void statusFeedback(char iteration)
 
     writeSensorsData();
 
+    if(pwm_value_l > stop_pwm_l && pwm_value_r > stop_pwm_r)
+    {
+        append(cmd," L");
+        percentualSpeed = 100*(pwm_value_l - lowSpeed_l)/(fullSpeed_l - lowSpeed_l);
+        int2char(aux,percentualSpeed);
+        append(cmd,aux);
+        append(cmd, "R");
+        percentualSpeed = 100*(pwm_value_r - lowSpeed_r)/(fullSpeed_r - lowSpeed_r);
+        int2char(aux,percentualSpeed);
+        append(cmd,aux);
+    }
+    else 
+        append(cmd," STP");
+/*
     append(cmd," L");
     int2char(aux,pwm_value_l);
     append(cmd,aux);
     append(cmd, "R");
     int2char(aux,pwm_value_r);
     append(cmd,aux);
+*/
     
     write_ackPayload(cmd);
 }
 
 void autonomous()
 {
-    char status[MaxPayload], iteration = '0'; // check for packet loss
+    char status[MaxPayload], iteration = 'a'; // check for packet loss
     status[0] = '\0';
 
     t = millis();
-    write_ackPayload("{");
     while(millis() < t + t_start)
     {
         ObstacleAvoid();
@@ -965,8 +959,8 @@ void autonomous()
 
             statusFeedback(iteration);
             rcv[0] = '\0';
-            if (iteration == '9')
-                iteration = '0';
+            if (iteration == 'z')
+                iteration = 'a';
             else 
                 iteration++;
         }
@@ -998,7 +992,7 @@ void writeSensorsData()
 void printSensorsData()
 {
     int i;
-    char status[MaxPayload], aux[6],iteration = '0';
+    char status[MaxPayload], aux[6],iteration = 'a';
     status[0] = '\0';
 
     myPulseIn(dyn);
@@ -1021,11 +1015,8 @@ void printSensorsData()
 
         read_nonBlocking();
         if(rcv[0] == '-')
-        {
-            write_ackPayload("#");
             break;
-        }
-        if(rcv[0] == '+')
+        else if(rcv[0] == '+')
             t = millis();
 
         write_ackPayload(status);
@@ -1034,11 +1025,15 @@ void printSensorsData()
         rcv[0] = '\0';
         aux[0] = '\0';
 
-        if (iteration == '9')
-            iteration = '0';
+        if (iteration == 'z')
+            iteration = 'a';
         else 
             iteration++;
     }
+    if(rcv[0] == '-')
+        write_ackPayload("button is OFF");
+    else
+        write_ackPayload("time out");
 }
 
 void ObstacleAvoidanceTechnique(int obstacle_avoidance_method, int obstacle)
@@ -1082,21 +1077,11 @@ void proportionalController()
     else
         obst_to_the_left = USS[4].mean;
     
-leftSpeed = lowSpeed_l + (fullSpeed_l - lowSpeed_l)*(obst_to_the_right - minDist)/(outOfRange - minDist);
-rightSpeed = lowSpeed_r + (fullSpeed_r - lowSpeed_r)*(obst_to_the_left - minDist)/(outOfRange - minDist);
-
+    leftSpeed = lowSpeed_l + (fullSpeed_l - lowSpeed_l)*(obst_to_the_right - minDist)/(outOfRange - minDist);
+    rightSpeed = lowSpeed_r + (fullSpeed_r - lowSpeed_r)*(obst_to_the_left - minDist)/(outOfRange - minDist);
 
     pwm_write(leftmotor, leftSpeed);
     pwm_write(rightmotor, rightSpeed);
-
-/*
-	int2char(aux,leftSpeed);
-    append(status,aux);
-	int2char(aux,rightSpeed);
-    append(status,aux);
-    write_ackPayload(status);
-*/
-
 }
 
 
@@ -1190,6 +1175,7 @@ bool parse_command() // expected command format  => ':l[0-999]a[0-999]f[0-999]|l
     else
         return 1;
 
+    // valid syntax, let's write to the real variables in charge of motor speed
     lowSpeed_l = new_speed[0];
     avgSpeed_l = new_speed[1];
     fullSpeed_l = new_speed[2];
