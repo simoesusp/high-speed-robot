@@ -1,0 +1,106 @@
+\chapter{Embasamento Teórico}
+\section{Sistemas Reativos}
+\epigraph{ 
+	  \textit{``Representações explícitas e modelos atrapalham. No fim das contas, a melhor representação do mundo é ele mesmo.''} 
+	 }
+	  { Brooks, R.A \cite{brooks} - tradução livre -} 
+	  
+%   \begin{flushright}
+% 	  \textit{``Representações explícitas e modelos atrapalham.\\
+% 	  No fim das contas, a melhor representação \\
+% 	  do mundo é ele mesmo.", Brooks, R.A. 
+% 	  \cite{brooks} \footnote{tradução livre}}
+%   \end{flushright}
+
+\subsection{Paradigma Reativo como Robótica Bioinspirada} 
+
+De acordo com Rodney Brooks \cite{brooks}, para o desenvolvimento da inteligência no seu sentido mais estrito e genuíno, são condições 
+suficientes que o indivíduo, que denominaremos agente, tenha as seguintes faculdades: mobilidade dentro de um ambiente dinâmico no qual esteja 
+inserido, percepção do que se passa nas suas adjacências e, por fim, manutenção da própria sobrevivência.
+Em suma, habilidades como o raciocinar, comunicar-se, gerar conhecimento nada mais são do que comportamentos complexos, consequências simples do fato 
+de existirmos e termos o poder de reagir dentro do meio em que vivemos.
+
+Para aprofundarmos a discussão e esclarecermos como se daria esse processo de aprimoramento dos agentes, é preciso fornecer uma  definição 
+mais rigorosa do termo ``comportamento''.
+Numa tradução livre: ``comportamentos são mapeamentos diretos de informações sensoriais recebidas em  
+padrões de ações motoras, desempenhadas para se cumprir uma tarefa. Matematicamente, seria uma função transferência que transforma dados dos 
+sensores em comandos para os atuadores'' \cite{murphy}.
+
+Nos animais, a transformação de percepção em ação está subordinada à existência de estímulos específicos, de natureza interna ou externa 
+ao agente, que podem ser entendidos como sinais de controle que que permitem ou inibem determinados comportamentos \cite{murphy}.
+A título de ilustração: ao avistar uma presa - informação sensorial - o predador somente a ataca - comportamento - caso esteja com fome - estímulo 
+interno; ou quando afastamos a mão - comportamento - ao tocarmos uma panela quente - a informação sensorial seria a temperatura da panela enquanto o 
+estímulo externo é o fato de que ela excede uma dada temperatura.
+
+Com base em estudos da etologia, o comportamentos dos animais podem ser inatos ou aprendidos, e a sua inteligência pode ser decomposta verticalmente 
+em camadas de comportamentos, cada qual acessa os sensores e atuadores do agente de maneira independente das demais \cite{murphy}.
+Isto é, o indivíduo inicia sua existência com um conjunto comportamentos inatos de autopreservação mas, ao longo da sua vida, outros 
+novos vão surgindo, podendo: refinar comportamentos pré-existentes, negá-los (completamente) ou agregar-se a eles sem produzir conflitos, 
+i.e. trabalhando paralelamente com os que lhe são ancestrais.
+Desta forma, os dois primeiros casos podem ser entendidos como uma reutilização de camadas inferiores da inteligência, enquanto o 
+último consiste na adição de mais uma camada.
+
+\subsection{Características}
+Por estar embasado em ideias da etologia discutidas na seção anterior, o paradigma reativo simplesmente desconsidera a etapa de planejamento 
+existente na tríade 'percepção, planejamento, ação', que sumariza o ciclo de tarefas realizadas por um sistema sob o paradigma hierárquico 
+\cite{murphy,roseli}.
+Em suma, os comportamentos se dão de acordo com o que o agente percebe que está acontecendo no seu entorno, não são feitas modelagens ou 
+representações do ambiente externo, apenas medições locais e orientadas a comportamentos.
+
+Em decorrência da exclusão da etapa de planejamento, robôs desenvolvidos sob o paradigma reativo costumam ser simples e apresentarem 
+respostas rápidas \cite{roseli}.
+Com boas práticas de projeto é possível construir uma robô com: alta coesão, pois comportamentos podem ter acesso direto aos sensores de que 
+necessitam para tomar suas decisões, o que possibilita um alto grau de independência em relação a operações e dados externos entre diferentes módulos 
+ou subsistemas do robô; e baixo acoplamento, pois comportamentos são independentes entre si e, portanto, há pouca ou nenhuma dependência de ligações 
+e 
+interfaces externas a um dado módulo \cite{murphy}.
+
+% TODO: \subsection{Arquitetura de Subsumpção}
+
+\section{Arquitetura MOSA}
+
+Arquitetura que propõe dividir o sistema aéreos de navegação autônoma em dois módulos: aeronave e MOSA \cite{mosa_proposal}.
+
+O primeiro constitui a porção crítica do sistema embarcado, i.e. segmento cuja falha pode resultar em ao menos um dos seguintes desastres: morte 
+ou lesão de pessoas; destruição ou danos a propriedades, patrimônios ou equipamentos; danos ambientais \cite{safety}.
+Veículos Aéreos Não Tripulados, VANTs, apresentam a tolerância de um erro grave a cada $10^5$ ou $10^9$ horas de voo \cite{hard}, o que as 
+caracteriza 
+como sistemas computacionais de tempo real do tipo \textit{hard}. 
+Maiores esclarecimentos acerca destes jargões podem ser encontrados no apêndice.
+
+O segundo corresponde à parte não crítica à segurança, encarregada do controle da navegação e, por conseguinte, da determinação da maior parte dos 
+parâmetros de voo. É caracterizado como um conjunto de sensores inteligentes capazes de cumprir uma missão específica, ou seja, 
+existe uma relação biunívoca entre missão e MOSA, dado que ele consiste no melhor arranjo de sensores para o cenário em questão. Neste contexto, a 
+aeronave é vista unicamente como o meio de transporte dos sensores, enquanto que o módulo MOSA constituiria o \textquoteleft cérebro\textquoteright{}  
+da plataforma, responsável pelo cumprimento da missão e por guiar a aeronave até a sua realização.
+
+%  \begin{figure}[h]
+%   \includegraphics[scale=0.5]{./Resources/MOSA.png}
+%   \caption{MOSA} \label{MOSA}
+%  \end{figure}
+
+No entanto, como a aeronave é o elemento responsável pela garantia da segurança, cabe a ela acatar ou não os comandos do MOSA. E pode, inclusive, 
+optar por readaptar a missão em tempo de voo para se ajustar ao cenário, o que inclui a seleção dos sensores que melhor se encaixam na dada 
+conjuntura.
+
+Isso se dá através de uma matriz de reconfiguração dinamicamente adaptável denominada \textit{Knowledge Based Framework}, seu papel é comparável à 
+expertise de um piloto.
+Ou seja, um elemento inteligente capaz de escolher o melhor serviço  a ser executado com base em regras e critérios de seleção como resposta em tempo 
+real, segurança, performance.
+
+
+% diferentes missões, definidas pelo mosa e diferentes sensores, podem ser integrados, possibilitando a escolha do melhor arranjo de sensores que se 
+% ajuste ao cenário de utilização do sistema. este é o mecanismo básico do mosa, fazendo com que a missão possa ser adaptativa. durante uma missão, 
+% com 
+% base em uma matriz de reconfiguração o vant pode se adaptar dinamicamente às características da missão, escolhendo os sensores que melhor se 
+% encaixam 
+% dependendo da situação. além do hardware, um sistema mosa deve contemplar também o software capaz de realizar uma missão, comunicar-se com todos os 
+% sensores que o compõe, enviar e receber dados para a aeronave .
+% 
+% o sistema mosa deve ser capaz de determinar se a missão prevista pode ou não ser realizada.
+% 
+% the aircraft can, for safety reasons, not follow the flight sensors
+% commands, eventually terminating the flight
+% 
+% flight sensors can provide data for mission controllers but aircraft
+% % % % % % % % controllers must not use data provided by mission sensors

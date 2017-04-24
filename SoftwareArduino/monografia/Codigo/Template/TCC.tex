@@ -1,0 +1,327 @@
+ \documentclass[
+  	11pt,% tamanho da fonte
+ 	openright,% capítulos começam em pág ímpar (insere página vazia caso preciso)
+ 	twoside,% para impressão em verso e anverso. Oposto a oneside
+ 	a4paper,% tamanho do papel. 
+ 	english,% idioma adicional para hifenização
+ 	brazil % o último idioma é o principal do documento
+ 	]{abntex2}
+	
+% \documentclass[sumario=abnt-6027-2012,12pt,twoside,a4paper,english,brazil]{abntex2} % do cabelo
+
+% ---
+% Cabelo sugeriu a fonte georgia
+% ---
+% \usepackage{pslatex}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{lmodern}			% Usa a fonte Latin Modern			
+\usepackage[T1]{fontenc}		% Selecao de codigos de fonte.
+\usepackage[utf8]{inputenc}		% Codificacao do documento (conversão automática dos acentos)
+\usepackage{lastpage}			% Usado pela Ficha catalográfica
+\usepackage{indentfirst}		% Indenta o primeiro parágrafo de cada seção.
+\usepackage{color}				% Controle das cores
+\usepackage{graphicx}			% Inclusão de gráficos
+\usepackage{microtype} 			% para melhorias de justificação
+% \usepackage[brazilian,hyperpageref]{backref}	 % Paginas com as citações na bibl
+\usepackage[num]{abntex2cite}	% Citações padrão ABNT
+% \usepackage[square]{abntex2cite}	% Citações padrão ABNT
+\citebrackets[] 
+
+\renewcommand{\familydefault}{\rmdefault}
+
+\renewcommand{\ABNTEXchapterfont}{\fontfamily{\rmdefault}\fontseries{b}\selectfont}
+\renewcommand{\ABNTEXsectionfont}{\fontfamily{\rmdefault}\fontseries{b}\selectfont}
+\renewcommand{\ABNTEXsubsectionfont}{\fontfamily{\rmdefault}\fontseries{b}\selectfont}
+\renewcommand{\ABNTEXsubsubsectionfont}{\fontfamily{\rmdefault}\fontseries{b}\selectfont}
+\renewcommand{\ABNTEXchapterfontsize}{\fontsize{14pt}{17pt}}
+\renewcommand{\ABNTEXsectionfontsize}{\fontsize{12pt}{15pt}}
+\renewcommand{\ABNTEXsubsectionfontsize}{\fontsize{12pt}{15pt}}
+\renewcommand{\ABNTEXsubsubsectionfontsize}{\fontsize{12pt}{15pt}}
+ 
+% --- 
+% CONFIGURAÇÕES DE PACOTES
+% --- 
+
+%   % ---
+%   % Configurações do pacote backref
+%   % Usado sem a opção hyperpageref de backref
+%   \renewcommand{\backrefpagesname}{Citado na(s) página(s):~}
+%   % Texto padrão antes do número das páginas
+%   \renewcommand{\backref}{}
+%   % Define os textos da citação
+%   \renewcommand*{\backrefalt}[4]{
+% 	  \ifcase #1 %
+% 		  Nenhuma citação no texto.%
+% 	  \or
+% 		  Citado na página #2.%     OI JOAO ESSA PARTE AQUI DE `CITADO X VEZES` NAO E NECESSARIA BJS
+% 	  \else
+% 		  Citado #1 vezes nas páginas #2.%
+% 	  \fi}%
+%   % ---
+
+% ---
+% Informações de dados para CAPA e FOLHA DE ROSTO
+% ---
+\titulo{Implementação de uma plataforma de teste de estratégia de controle de VANTs utilizando robô terrestre autônomo de alta velocidade}
+\autor{João Victor Batista Gordo}
+\local{São Carlos, Brasil}
+\data{\today}
+\orientador{Eduardo do Valle Simões}
+\instituicao{
+  Universidade de São Paulo
+  \par
+Escola de Engenharia de São Carlos
+  \par
+Departamento de Engenharia Elétrica e de Computação}
+\tipotrabalho{Monografia do Trabalho de Conclusão de Curso}
+% O preambulo deve conter o tipo do trabalho, o objetivo, 
+% o nome da instituição e a área de concentração 
+\preambulo{} % TODO fazer isso direitinho
+% ---
+
+
+% ---
+% Configurações de aparência do PDF final
+
+% alterando o aspecto da cor azul
+\definecolor{blue}{RGB}{41,5,195}
+
+% informações do PDF
+\makeatletter
+\hypersetup{
+     	%pagebackref=true,
+		pdftitle={\@title}, 
+		pdfauthor={\@author},
+    	pdfsubject={\imprimirpreambulo},
+	    pdfcreator={LaTeX with abnTeX2},
+		pdfkeywords={navegação autônoma}{robótica}{sistemas reativos}{desvio de obstáculos}{...?}, % TODO
+		colorlinks=true,       		% false: boxed links; true: colored links
+    	linkcolor=blue,          	% color of internal links
+    	citecolor=blue,        		% color of links to bibliography
+    	filecolor=magenta,      		% color of file links
+		urlcolor=blue,
+		bookmarksdepth=4
+}
+\makeatother
+
+% --- 
+% Espaçamentos entre linhas e parágrafos 
+% --- 
+
+% O tamanho do parágrafo é dado por:
+\setlength{\parindent}{1.3cm}
+
+% Controle do espaçamento entre um parágrafo e outro:
+\setlength{\parskip}{0.2cm}  % tente também \onelineskip
+
+% ---
+% compila o indice
+% ---
+\makeindex
+% ---
+
+% ----
+% Início do documento
+% ----
+\begin{document}
+
+% Retira espaço extra obsoleto entre as frases.
+\frenchspacing 
+% ----------------------------------------------------------
+% ELEMENTOS PRÉ-TEXTUAIS
+% ----------------------------------------------------------
+% \pretextual
+
+% ---
+% Capa
+% ---
+\imprimircapa
+% ---
+
+% ---
+% Folha de rosto
+% (o * indica que haverá a ficha bibliográfica)
+% ---
+\imprimirfolhaderosto*
+% ---
+
+% ---
+% Inserir a ficha bibliografica     OBS.: tirei o código que tinha aqui!
+% ---
+% \includepdf{fichabibliografica_final.pdf}
+
+% ---
+% Inserir folha de aprovação
+% ---
+%
+% \includepdf{folhadeaprovacao_final.pdf}
+%
+
+% ---
+% Dedicatória
+% ---
+\begin{dedicatoria}
+   \vspace*{\fill}
+   \centering
+   \noindent
+   \textit{ Este trabalho é dedicado às crianças adultas que,\\
+   quando pequenas, sonharam em se tornar cientistas.} \vspace*{\fill}
+\end{dedicatoria}
+% ---
+
+% ---
+% Agradecimentos
+% ---
+\begin{agradecimentos}
+Eu gostaria de agradecer à comunidade que vive o paradigma revolucionário de disseminação livre e gratuita de ideias e trabalhos.
+Este projeto é um fruto tímido de uma árvore regada pelos esforços de cada uma destas pessoas que, de gota em gota, clareiam as águas 
+turvadas pelo egoísmo e nutrem a germinação de verdadeiros pomares que estão por vir. Quem sabe um dia o único obstáculo ao aprendizado e construção 
+do conhecimento seja a força de vontade...
+\end{agradecimentos}
+% ---
+
+% ---
+% Epígrafe
+% ---
+\begin{epigrafe}
+    \vspace*{\fill}
+	\begin{flushright}
+		\textit{``Não vos amoldeis às estruturas deste mundo, \\
+		mas transformai-vos pela renovação da mente, \\
+		a fim de distinguir qual é a vontade de Deus: \\
+		o que é bom, o que Lhe é agradável, o que é perfeito.\\
+		(Bíblia Sagrada, Romanos 12, 2)}
+	\end{flushright}
+\end{epigrafe}
+% ---
+
+% ---
+% RESUMOS
+% ---
+\input{../Resumo/Resumo.tex}
+
+% ---
+% inserir lista de ilustrações
+% ---
+\pdfbookmark[0]{\listfigurename}{lof}
+\listoffigures*
+\cleardoublepage
+% ---
+
+% ---
+% inserir lista de tabelas
+% ---
+\pdfbookmark[0]{\listtablename}{lot}
+\listoftables*
+\cleardoublepage
+% ---
+
+% ---
+% inserir lista de abreviaturas e siglas
+% ---
+\begin{siglas}
+  \item[CC] Corrente Contínua
+  \item[PWM] \textit{Pulse Width Modulation}
+  \item[ESC] \textit{Electronic Speed Controller}
+  \item[IDE] \textit{Integrated Development Environment}
+  \item[ISM] \textit{Industrial, Scientific and Medical}
+  \item[UHF] \textit{Ultra High Frequency}
+  \item[SPI] \textit{Serial Peripheral Interface} 
+  \item[USB] \textit{Universal Serial Bus}
+  \item[CRC] \textit{Cyclic Redundancy Check}
+  \item[GFSK] \textit{Gaussian Frequency Shift Keying}
+  \item[BLDC] \textit{Brushless Direct Current}
+  \item[FIFO] \textit{First In First Out}
+  \item[VANT] \textit{Veículo Aereo Não Tripulado}
+  \item[UBEC] \textit{Ultimate Batterie Eliminator Circuit}
+  \item[LiPo] Lítio Polímero
+  \item[MIFA] \textit{Meandered Inverted-F Antenna}
+  \item[ICSP] \textit{In-Circuit Serial Programming}
+\end{siglas}
+% ---
+
+% ---
+% inserir lista de símbolos
+% ---
+\begin{simbolos}
+  \item[$ \alpha $] coeficiente de atenuação do meio.
+  \item[$ \tau $] tempo de meia volta da onda propagante, i.e. \textit{time of flight}, do sensor.
+  \item[$ \Delta $] distância medida nos sensores do tipo \textit{time of flight}.
+  \item[$ \nu $] velocidade de propagação no meio da onda ou partícula nos sensores do tipo \textit{time of flight}.
+%   \item[$\approx$] aproximadamente.
+\end{simbolos}
+% ---
+
+% ---
+% inserir o sumario
+% ---
+\pdfbookmark[0]{\contentsname}{toc}
+\tableofcontents*
+\cleardoublepage
+% ---
+
+
+
+% ----------------------------------------------------------
+% ELEMENTOS TEXTUAIS
+% ----------------------------------------------------------
+\textual
+
+\input{../Introducao/Introducao.tex}
+\input{../EmbasamentoTeorico/EmbasamentoTeorico.tex}
+\input{../Materiais/Materiais.tex}
+\input{../Metodos/Metodos.tex}
+\input{../Resultados/Resultados.tex}
+\input{../Conclusao/Conclusao.tex}
+
+% ----------------------------------------------------------
+% ELEMENTOS PÓS-TEXTUAIS
+% ----------------------------------------------------------
+\postextual
+% ----------------------------------------------------------
+
+% ----------------------------------------------------------
+% Referências bibliográficas
+% ----------------------------------------------------------
+\bibliography{../Bibliografia/bibliografia.bib}
+
+% ----------------------------------------------------------
+% Glossário
+% ----------------------------------------------------------
+%
+% Consulte o manual da classe abntex2 para orientações sobre o glossário.
+%
+%\glossary
+
+% ----------------------------------------------------------
+% Apêndices
+% ----------------------------------------------------------
+
+% ---
+% Inicia os apêndices
+% ---
+\begin{apendicesenv}
+% Imprime uma página indicando o início dos apêndices
+ \partapendices
+\input{../Apendices/Apendices.tex}
+\end{apendicesenv}
+% ---
+
+% ----------------------------------------------------------
+% Anexos
+% ----------------------------------------------------------
+
+\begin{anexosenv}
+% Imprime uma página indicando o início dos anexos
+% \partanexos
+\input{../Anexos/Anexos.tex}
+\end{anexosenv}
+
+%---------------------------------------------------------------------
+% INDICE REMISSIVO é necessário??
+%---------------------------------------------------------------------
+%\phantompart
+% \printindex
+%---------------------------------------------------------------------
+
+\end{document}

@@ -1,0 +1,7 @@
+\select@language {brazil}
+\contentsline {figure}{\numberline {1}{\ignorespaces M\IeC {\'o}dulo de R\IeC {\'a}dio Frequ\IeC {\^e}ncia baseado no \textit {transceiver} da Nordic nRF24L01+}}{30}{figure.3.1}
+\contentsline {figure}{\numberline {2}{\ignorespaces Diagrama da Classe RF24}}{47}{figure.A.2}
+\contentsline {figure}{\numberline {3}{\ignorespaces Estrutura Anal\IeC {\'\i }tica do Projeto}}{48}{figure.A.3}
+\contentsline {figure}{\numberline {4}{\ignorespaces Diagrama El\IeC {\'e}trico}}{49}{figure.A.4}
+\contentsline {figure}{\numberline {5}{\ignorespaces Fluxograma da Rotina de Desvio de Obst\IeC {\'a}culos}}{51}{figure.A.5}
+\contentsline {figure}{\numberline {6}{\ignorespaces Tr\IeC {\^e}s tipos de modula\IeC {\c c}\IeC {\~a}o PWM: \textit {trailing edge}, \textit {leading edge} e \textit {both edges}, de cima pra baixo, respectivamente.}}{52}{figure.A.6}

@@ -1,0 +1,16 @@
+\chapter{Resultados}
+
+\section{USS}
+
+\cite{jones}(página 149) vibração residual do trigger pode causar falsas leituras no echo, talvez esse seja o problema no caso de detecções dinâmicas 
+deixado de lado.
+
+\cite{siegwart} (páginas 126-127) talvez estendendo o \textit{blanking time} consigamos manter as detecções dinâmicas. Como fazer isso:
+\begin{itemize}
+ \item colocar um delay antes de entrar no loop
+ \item mexer diretamente no myPulsein() para garantir medidas abaixo de 5 cm não sejam processadas trabalhando nos IFs. 
+\end{itemize}
+
+ While comparison of consecutive readings is an efficient way for rejecting external
+ erroneous readings, it is unsuitable for reducing crosstalk. \cite{2016_artigo_1}
+
